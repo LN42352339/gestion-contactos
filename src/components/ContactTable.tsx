@@ -16,12 +16,12 @@ const ContactTable: React.FC<ContactTableProps> = ({
   return (
     <div className="overflow-x-auto mt-6 shadow-lg rounded-lg w-full">
       <table className="min-w-full bg-white border border-gray-200 rounded-lg">
-        <thead className="bg-blue-600 text-white">
+        <thead className="bg-red-500 text-white">
           <tr>
             <th scope="col" className="px-4 py-2 border">Primer Nombre</th>
             <th scope="col" className="px-4 py-2 border">Segundo Nombre</th>
-            <th scope="col" className="px-4 py-2 border">Primer Apellido</th>
-            <th scope="col" className="px-4 py-2 border">Segundo Apellido</th>
+            <th scope="col" className="px-4 py-2 border">Apellido Paterno</th>
+            <th scope="col" className="px-4 py-2 border">Apellido Materno</th>
             <th scope="col" className="px-4 py-2 border">DNI</th>
             <th scope="col" className="px-4 py-2 border">Teléfono</th>
             <th scope="col" className="px-4 py-2 border">Email</th>

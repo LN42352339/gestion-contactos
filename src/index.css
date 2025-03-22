@@ -1,42 +1,23 @@
 /* Importa las utilidades y estilos base de Tailwind CSS */
 @import "tailwindcss";
 
-/* 
-  Ajusta el elemento <html> para ocupar todo el ancho.
-  No es obligatorio definir height aquí a menos que lo requieras.
-*/
-html {
+/* Reset y estilos globales */
+html, body {
+  margin: 0;
+  padding: 0;
   width: 100%;
+  min-height: 100vh;
 }
 
-/* 
-  Variables globales y estilos base
-  - Se definen propiedades de fuente, colores y optimizaciones de renderizado
-  - Estas reglas se aplican al elemento raíz (:root) para que estén disponibles en toda la aplicación.
-*/
+/* Definición global de la fuente y otros parámetros */
 :root {
-  /* Definición de tipografía base */
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
-  /* Esquema de color para modos claro y oscuro */
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  /* Optimización para la síntesis tipográfica y suavizado de fuentes */
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
-/* 
-  Estilos para enlaces (anchor tags)
-  - Se define un peso de fuente y color base, heredando la decoración del enlace.
-  - Al pasar el cursor, se cambia el color para indicar interactividad.
-*/
+/* Estilos básicos para enlaces */
 a {
   font-weight: 500;
   color: #646cff;
@@ -46,35 +27,7 @@ a:hover {
   color: #535bf2;
 }
 
-/* 
-  Estilos globales para el cuerpo del documento:
-  - Se eliminan márgenes por defecto.
-  - Se utiliza Flexbox para centrar el contenido si es lo que deseas (vertical y horizontalmente).
-  - Se asegura que el body tenga una altura mínima del 100% de la ventana (min-height: 100vh).
-  - Se establece el ancho al 100% para que no aparezcan scrolls horizontales indeseados.
-*/
-body {
-  margin: 0;
-  /*place-items: center; */
-  min-height: 100vh; 
-  width: 100%;
-}
-
-/* 
-  Estilos para títulos (h1)
-  - Se ajusta el tamaño de fuente y el interlineado para resaltar el encabezado.
-*/
-/*h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-/* 
-  Estilos para botones:
-  - Se define un borde redondeado, sin borde visible por defecto y un padding para mayor comodidad.
-  - Se utilizan transiciones para suavizar el cambio del borde al interactuar.
-  - Se hereda la fuente del elemento padre.
-*/
+/* Estilos básicos para botones */
 button {
   border-radius: 8px;
   border: 1px solid transparent;
@@ -82,34 +35,20 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: #F54C4C; /* Color de fondo del botón */
+  color: #f4f4f7; /* Color del texto */
   cursor: pointer;
-  transition: border-color 0.25s;
-  color : rgb(37, 30, 248);
+  transition: border-color 0.25s, background-color 0.25s;
 }
-
-/* 
-  Efecto hover para botones:
-  - Al pasar el cursor, se muestra un borde de color para resaltar la interactividad.
-*/
 button:hover {
   border-color: #646cff;
 }
-
-/* 
-  Estilos para el foco en botones:
-  - Se establece un outline para mejorar la visibilidad del foco, importante para la accesibilidad.
-*/
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
-/* 
-  Estilos para el modo claro (cuando el usuario prefiere un esquema de color claro):
-  - Se redefinen los colores del :root para el fondo y el texto.
-  - Se ajusta el color hover de los enlaces y el fondo de los botones.
-*/
+/* Estilos para modo claro (opcional) */
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
@@ -119,6 +58,6 @@ button:focus-visible {
     color: #747bff;
   }
   button {
-    background-color: #e6e4e5;
+    background-color: #F54C4C;
   }
 }
