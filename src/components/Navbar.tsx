@@ -37,7 +37,7 @@ export default function Navbar() {
           onClick={handleLogout}
           className="!bg-white !text-red-600 !border-2 !border-red-600 
              !px-4 !py-2 !rounded-md !transition-all !duration-300 
-             hover:!bg-slate-300 hover:!text-white hover:!shadow-lg hover:!scale-105"
+             hover:!bg-slate-400 hover:!text-red hover:!shadow-lg hover:!scale-105"
         >
           Cerrar Sesión
         </button>

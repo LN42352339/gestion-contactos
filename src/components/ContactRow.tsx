@@ -29,7 +29,7 @@ const ContactRow: React.FC<ContactRowProps> = ({
           onClick={editarContacto}
           className="!bg-white !text-slate-600 !border-2 !border-slate-700 
                      !px-3 !py-1 !rounded-md !transition-all !duration-300 
-                     hover:!bg-slate-300 hover:!text-white hover:!shadow-lg hover:!scale-105"
+                     hover:!bg-slate-400 hover:!text-red-500 hover:!shadow-lg hover:!scale-105"
         >
           ✏️ Editar
         </button>

@@ -15,6 +15,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 export default function Dashboard() {
+  const [cargando, setCargando] = useState(true);
   const [contactos, setContactos] = useState<Contacto[]>([]);
   const [nuevoContacto, setNuevoContacto] = useState<Contacto>({
     primerNombre: "",
@@ -31,11 +32,13 @@ export default function Dashboard() {
   const [modoEdicion, setModoEdicion] = useState(false);
   const [idEdicion, setIdEdicion] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
 
   useEffect(() => {
     const cargarContactos = async () => {
       const contactosLista = await obtenerContactos();
       setContactos(contactosLista);
+      setTimeout(() => setCargando(false), 500);
     };
     cargarContactos();
   }, []);
@@ -65,6 +68,7 @@ export default function Dashboard() {
     });
     setModoEdicion(false);
     setIdEdicion(null);
+    setMostrarFormulario(false);
   };
 
   const manejarSubmit = async () => {
@@ -162,20 +166,12 @@ export default function Dashboard() {
     setModoEdicion(true);
     setIdEdicion(contacto.id || null);
     setNuevoContacto(contacto);
+    setMostrarFormulario(true);
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
   };
-
-  const accesosRapidos = [
-    { label: "Agregar", img: "https://img.icons8.com/ios-filled/50/add-user-group-man-man.png" },
-    { label: "Productos", img: "https://img.icons8.com/ios-filled/50/shopping-cart.png" },
-    { label: "Cupones", img: "https://img.icons8.com/ios-filled/50/coupon.png" },
-    { label: "Usuarios", img: "https://img.icons8.com/ios-filled/50/user-group-man-man.png" },
-    { label: "Settings", img: "https://img.icons8.com/ios-filled/50/settings.png" },
-    { label: "Cuenta", img: "https://img.icons8.com/ios-filled/50/user.png" },
-  ];
 
   const contactosFiltrados = contactos.filter((contacto) => {
     const searchTerm = searchQuery.toLowerCase();
@@ -189,13 +185,56 @@ export default function Dashboard() {
     );
   });
 
+  const accesosRapidos = [
+    {
+      label: "Buscar Contacto",
+      img: "https://img.icons8.com/ios-filled/50/search-contacts.png",
+    },
+    {
+      label: "Agregar",
+      img: "https://img.icons8.com/ios-filled/50/add-user-group-man-man.png",
+      onClick: () => setMostrarFormulario(true),
+    },
+    {
+      label: "Importar",
+      img: "https://img.icons8.com/ios-filled/50/import-csv.png",
+    },
+    {
+      label: "Dashboard",
+      img: "https://img.icons8.com/ios-filled/50/combo-chart.png",
+    },
+    {
+      label: "Settings",
+      img: "https://img.icons8.com/ios-filled/50/settings.png",
+    },
+    {
+      label: "Cuenta",
+      img: "https://img.icons8.com/ios-filled/50/user.png",
+    },
+  ];
+
+  if (cargando) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
+        <img
+          src="/src/assets/img/logod.png"
+          alt="Logo"
+          className="w-24 h-24 animate-pulse mb-4"
+        />
+        <span className="text-gray-600 text-lg animate-pulse font-semibold">
+          Cargando contactos...
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900">
       <Navbar />
 
       <main className="w-full p-6">
         <ToastContainer position="top-center" autoClose={3000} />
-        <h2 className="text-3xl font-bold text-center text-slate-500 mb-6">
+        <h2 className="text-3xl font-bold text-center text-slate-600 mb-6">
           Gestión de Contactos
         </h2>
 
@@ -203,7 +242,8 @@ export default function Dashboard() {
           {accesosRapidos.map((item, i) => (
             <div
               key={i}
-              className="bg-white shadow rounded p-4 flex flex-col items-center hover:shadow-lg transition"
+              className="bg-white shadow rounded p-4 flex flex-col items-center hover:shadow-lg transition cursor-pointer"
+              onClick={item.onClick}
             >
               <img src={item.img} alt={item.label} className="mb-2 h-10 w-10" />
               <span className="font-semibold">{item.label}</span>
@@ -211,14 +251,24 @@ export default function Dashboard() {
           ))}
         </div>
 
-        <div className="w-full bg-white p-6 transition-all duration-500 ease-in-out transform hover:scale-[1.01]">
-          <ContactForm
-            contacto={nuevoContacto}
-            manejarCambio={manejarCambio}
-            manejarSubmit={manejarSubmit}
-            modoEdicion={modoEdicion}
-          />
-        </div>
+        {mostrarFormulario && (
+          <div className="fixed inset-0 bg-white/40 bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
+            <div className="bg-white w-full max-w-2xl p-6 rounded-lg shadow-xl relative">
+              <button
+                className="absolute top-2 right-2 text-red-500 font-bold text-xl hover:text-red-700"
+                onClick={() => setMostrarFormulario(false)}
+              >
+                ✖
+              </button>
+              <ContactForm
+                contacto={nuevoContacto}
+                manejarCambio={manejarCambio}
+                manejarSubmit={manejarSubmit}
+                modoEdicion={modoEdicion}
+              />
+            </div>
+          </div>
+        )}
 
         <div className="w-full mt-4">
           <input
@@ -226,8 +276,12 @@ export default function Dashboard() {
             placeholder="Buscar por nombres o apellidos..."
             value={searchQuery}
             onChange={handleSearchChange}
-            className="border border-gray-300 p-2 w-full rounded-md"
+            className="border border-slate-700 p-2 w-full rounded-md"
           />
+        </div>
+
+        <div className="w-full mt-4 text-right text-sm text-gray-600">
+          Total de contactos: {contactosFiltrados.length}
         </div>
 
         <div className="w-full mt-8">
@@ -236,9 +290,6 @@ export default function Dashboard() {
             editarContacto={manejarEditar}
             eliminarContacto={manejarEliminar}
           />
-          <div className="w-full mt-4 text-right text-sm text-gray-600">
-            Total de contactos: {contactosFiltrados.length}
-          </div>
         </div>
       </main>
     </div>
