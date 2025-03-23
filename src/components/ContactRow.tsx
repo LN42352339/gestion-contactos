@@ -3,17 +3,28 @@ import { Contacto } from "../types";
 
 interface ContactRowProps {
   contacto: Contacto;
-  editarContacto: () => void;
-  eliminarContacto: () => void;
+  editarContacto: (contacto: Contacto) => void;
+  eliminarContacto: (id: string | undefined) => void;
+  seleccionado: boolean;
+  toggleSeleccion: (id: string) => void;
 }
 
 const ContactRow: React.FC<ContactRowProps> = ({
   contacto,
   editarContacto,
   eliminarContacto,
+  seleccionado,
+  toggleSeleccion,
 }) => {
   return (
     <tr className="border-b hover:bg-gray-100 transition duration-300">
+      <td className="px-4 py-2 border text-center">
+        <input
+          type="checkbox"
+          checked={seleccionado}
+          onChange={() => toggleSeleccion(contacto.id!)}
+        />
+      </td>
       <td className="px-4 py-2 border">{contacto.primerNombre}</td>
       <td className="px-4 py-2 border">{contacto.segundoNombre}</td>
       <td className="px-4 py-2 border">{contacto.primerApellido}</td>
@@ -24,22 +35,18 @@ const ContactRow: React.FC<ContactRowProps> = ({
       <td className="px-4 py-2 border">{contacto.cargo}</td>
       <td className="px-4 py-2 border">{contacto.area}</td>
       <td className="px-4 py-2 border">{contacto.supervisor}</td>
-      <td className="px-4 py-2 border flex space-x-2 justify-center">
+      <td className="px-4 py-2 border text-center space-x-2">
         <button
-          onClick={editarContacto}
-          className="!bg-white !text-slate-600 !border-2 !border-slate-700 
-                     !px-3 !py-1 !rounded-md !transition-all !duration-300 
-                     hover:!bg-slate-400 hover:!text-red-500 hover:!shadow-lg hover:!scale-105"
+          onClick={() => editarContacto(contacto)}
+          className="text-blue-600 hover:underline"
         >
-          ✏️ Editar
+          Editar
         </button>
         <button
-          onClick={eliminarContacto}
-          className="!bg-white !text-red-600 !border-2 !border-red-600 
-                     !px-3 !py-1 !rounded-md !transition-all !duration-300 
-                     hover:!bg-red-600 hover:!text-white hover:!shadow-lg hover:!scale-105"
+          onClick={() => eliminarContacto(contacto.id)}
+          className="text-red-600 hover:underline"
         >
-          🗑️ Eliminar
+          Eliminar
         </button>
       </td>
     </tr>
