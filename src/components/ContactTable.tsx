@@ -25,29 +25,34 @@ const ContactTable: React.FC<ContactTableProps> = ({
 
   return (
     <div className="overflow-x-auto mt-6 shadow-lg rounded-lg w-full">
-      <table className="min-w-full bg-white border border-gray-200 rounded-lg">
-        <thead className="bg-red-500 text-white">
+      {/* Contenedor con scroll horizontal para pantallas pequeñas */}
+      <table className="min-w-[900px] w-full bg-white border border-gray-200 text-sm">
+        {/* Cabecera con estilo más compacto */}
+        <thead className="bg-red-500 text-white text-xs">
           <tr>
-            <th className="px-4 py-2 border">
+          <th className="px-1 py-1 border text-xs">
+
               <input
                 type="checkbox"
                 checked={todosSeleccionados}
                 onChange={toggleSeleccionTodos}
               />
             </th>
-            <th className="px-4 py-2 border">Primer Nombre</th>
-            <th className="px-4 py-2 border">Segundo Nombre</th>
-            <th className="px-4 py-2 border">Apellido Paterno</th>
-            <th className="px-4 py-2 border">Apellido Materno</th>
-            <th className="px-4 py-2 border">DNI</th>
-            <th className="px-4 py-2 border">Teléfono</th>
-            <th className="px-4 py-2 border">Email</th>
-            <th className="px-4 py-2 border">Cargo</th>
-            <th className="px-4 py-2 border">Área</th>
-            <th className="px-4 py-2 border">Supervisor</th>
-            <th className="px-4 py-2 border">Acciones</th>
+            <th className="px-0 py-2 border text-xs">Primer Nombre</th>
+            <th className="px-0 py-1 border text-xs">Segundo Nombre</th>
+            <th className="px-0 py-1 border text-xs">Apellido Paterno</th>
+            <th className="px-0 py-1 border text-xs">Apellido Materno</th>
+            <th className="px-0 py-1 border text-xs">DNI</th>
+            <th className="px-0 py-1 border text-xs">Teléfono</th>
+            <th className="px-0 py-1 border text-xs">Email</th>
+            <th className="px-0 py-1 border text-xs">Cargo</th>
+            <th className="px-0 py-1 border text-xs">Área</th>
+            <th className="px-0 py-1 border text-xs">Supervisor</th>
+            <th className="px-0 py-1 border text-xs">Acciones</th>
           </tr>
         </thead>
+
+        {/* Cuerpo de la tabla */}
         <tbody>
           {contactos.map((contacto) => (
             <ContactRow

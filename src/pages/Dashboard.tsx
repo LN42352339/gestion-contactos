@@ -7,6 +7,17 @@ import {
   eliminarContacto,
 } from "../services/contactService";
 import ContactForm from "../components/ContactForm";
+import {
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend
+} from "recharts";
+
 import ContactTable from "../components/ContactTable";
 import { Contacto } from "../types";
 import Navbar from "../components/Navbar";
@@ -19,12 +30,15 @@ export default function Dashboard() {
   const [cargando, setCargando] = useState(true);
   const [mostrarModalExportar, setMostrarModalExportar] = useState(false);
   const [contactos, setContactos] = useState<Contacto[]>([]);
+
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [paginaActual, setPaginaActual] = useState(1);
   const contactosPorPagina = 10;
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
   const [idEdicion, setIdEdicion] = useState<string | null>(null);
+  const [mostrarEstadisticas, setMostrarEstadisticas] = useState(false);
+
   const [contactosSeleccionados, setContactosSeleccionados] = useState<
     string[]
   >([]);
@@ -87,8 +101,8 @@ export default function Dashboard() {
     {
       label: "Dashboard",
       img: "https://img.icons8.com/ios-filled/50/combo-chart.png",
+      onClick: () => setMostrarEstadisticas(true),
     },
-
     {
       label: "Cuenta",
       img: "https://img.icons8.com/ios-filled/50/user.png",
@@ -450,6 +464,33 @@ export default function Dashboard() {
     );
   }
 
+  // Total de contactos
+  const cantidadContactos = contactos.length;
+
+  // Contar contactos por área
+  const contarContactosPorArea = () => {
+    const conteo: { area: string; cantidad: number }[] = [];
+    const agrupado: { [area: string]: number } = {};
+
+    contactos.forEach((contacto) => {
+      if (contacto.area) {
+        agrupado[contacto.area] = (agrupado[contacto.area] || 0) + 1;
+      }
+    });
+
+    for (const area in agrupado) {
+      conteo.push({ area, cantidad: agrupado[area] });
+    }
+
+    return conteo;
+  };
+
+  // Área con más contactos
+  const areaConMasContactos = contarContactosPorArea().reduce(
+    (prev, curr) => (curr.cantidad > prev.cantidad ? curr : prev),
+    { area: "Sin datos", cantidad: 0 }
+  ).area;
+
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900">
       <Navbar />
@@ -491,6 +532,78 @@ export default function Dashboard() {
                 manejarSubmit={manejarSubmit}
                 modoEdicion={modoEdicion}
               />
+            </div>
+          </div>
+        )}
+
+        {mostrarEstadisticas && (
+          <div className="bg-white p-6 mt-6 rounded shadow-md">
+            <h3 className="text-2xl font-semibold mb-4 text-center">
+              📊 Estadísticas de Contactos
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+              <div className="bg-white p-4 rounded shadow text-center">
+                <h3 className="text-lg font-bold text-gray-700">
+                  📋 Total Contactos
+                </h3>
+                <p className="text-3xl text-blue-600 font-semibold">
+                  {cantidadContactos}
+                </p>
+              </div>
+              <div className="bg-white p-4 rounded shadow text-center">
+                <h3 className="text-lg font-bold text-gray-700">
+                  🏢 Área con más contactos
+                </h3>
+                <p className="text-2xl text-green-600 font-semibold">
+                  {areaConMasContactos}
+                </p>
+              </div>
+            </div>
+
+            <button
+              className="mb-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+              onClick={() => setMostrarEstadisticas(false)}
+            >
+              Cerrar Dashboard
+            </button>
+
+            <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h4 className="text-lg font-semibold mb-2">
+                  Contactos por Área
+                </h4>
+                <BarChart
+                  width={500}
+                  height={300}
+                  data={contarContactosPorArea()}
+                >
+                  <XAxis dataKey="area" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="cantidad" fill="#8884d8" />
+                </BarChart>
+              </div>
+
+              <div>
+                <h4 className="text-lg font-semibold mb-2">
+                  Distribución General
+                </h4>
+                <PieChart width={400} height={300}>
+                  <Pie
+                    data={contarContactosPorArea()}
+                    dataKey="cantidad"
+                    nameKey="area"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    fill="#82ca9d"
+                    label
+                  />
+                  <Tooltip />
+                </PieChart>
+              </div>
             </div>
           </div>
         )}

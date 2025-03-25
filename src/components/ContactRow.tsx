@@ -1,5 +1,6 @@
 import React from "react";
 import { Contacto } from "../types";
+import { Pencil, Trash2 } from "lucide-react";
 
 interface ContactRowProps {
   contacto: Contacto;
@@ -17,36 +18,40 @@ const ContactRow: React.FC<ContactRowProps> = ({
   toggleSeleccion,
 }) => {
   return (
-    <tr className="border-b hover:bg-gray-100 transition duration-300">
-      <td className="px-4 py-2 border text-center">
+    <tr className="border-b hover:bg-gray-100 transition duration-200 text-sm">
+      <td className="px-2 py-0.5 border text-xs">
         <input
           type="checkbox"
           checked={seleccionado}
           onChange={() => toggleSeleccion(contacto.id!)}
         />
       </td>
-      <td className="px-4 py-2 border">{contacto.primerNombre}</td>
-      <td className="px-4 py-2 border">{contacto.segundoNombre}</td>
-      <td className="px-4 py-2 border">{contacto.primerApellido}</td>
-      <td className="px-4 py-2 border">{contacto.segundoApellido}</td>
-      <td className="px-4 py-2 border">{contacto.dni}</td>
-      <td className="px-4 py-2 border">{contacto.telefono}</td>
-      <td className="px-4 py-2 border">{contacto.email}</td>
-      <td className="px-4 py-2 border">{contacto.cargo}</td>
-      <td className="px-4 py-2 border">{contacto.area}</td>
-      <td className="px-4 py-2 border">{contacto.supervisor}</td>
-      <td className="px-4 py-2 border text-center space-x-2">
+      <td className="px-1 py-0.5 border text-xs">{contacto.primerNombre}</td>
+      <td className="px-1 py-0.5 border text-xs">{contacto.segundoNombre}</td>
+      <td className="px-1 py-0.5 border text-xs">{contacto.primerApellido}</td>
+      <td className="px-1 py-0.5 border text-xs">{contacto.segundoApellido}</td>
+      <td className="px-1 py-0.5 border text-xs">{contacto.dni}</td>
+      <td className="px-1 py-0.5 border text-xs">{contacto.telefono}</td>
+      <td className="px-2 py-1 border break-words max-w-[185px]">
+        {contacto.email}
+      </td>
+      <td className="px-1 py-0.5 border text-xs">{contacto.cargo}</td>
+      <td className="px-1 py-0.5 border text-xs">{contacto.area}</td>
+      <td className="px-1 py-0.5 border text-xs">{contacto.supervisor}</td>
+      <td className="px-2 py-1 border text-center space-x-1">
         <button
           onClick={() => editarContacto(contacto)}
-          className="text-blue-600 hover:underline"
+          className="text-blue-600 hover:text-blue-800"
+          title="Editar"
         >
-          Editar
+          <Pencil size={16} />
         </button>
         <button
           onClick={() => eliminarContacto(contacto.id)}
-          className="text-red-600 hover:underline"
+          className="text-red-600 hover:text-red-800"
+          title="Eliminar"
         >
-          Eliminar
+          <Trash2 size={16} />
         </button>
       </td>
     </tr>
