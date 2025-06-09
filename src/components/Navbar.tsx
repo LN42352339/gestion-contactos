@@ -1,9 +1,10 @@
 // src/components/Navbar.tsx
+
 import { signOut } from "firebase/auth";
 import { auth } from "../config/firebaseConfig";
 import { useAuth } from "../contexts/AuthContext"; // Hook que retorna { user, loading }
 import { useNavigate } from "react-router-dom";
-import logo from "../assets/img/logod.png";
+import logo from "../assets/img/cargando.webp";
 
 export default function Navbar() {
   const { user } = useAuth();
@@ -20,13 +21,16 @@ export default function Navbar() {
 
   return (
     <nav className="bg-red-500 text-white px-4 py-2 flex justify-between items-center">
-      {/* Sección izquierda: Logo y nombre de la aplicación */}
-      <div className="flex items-center space-x-3">
+      {/* Logo y título que redirige al dashboard */}
+      <div
+        className="flex items-center space-x-3 cursor-pointer"
+        onClick={() => navigate("/dashboard")}
+      >
         <img src={logo} alt="Logo" className="h-15 w-20 object-contain" />
         <span className="text-xl font-bold">Congreso de la República</span>
       </div>
 
-      {/* Sección derecha: Saludo al usuario y botón de logout */}
+      {/* Usuario y botón de logout */}
       <div className="flex items-center space-x-4">
         {user && (
           <span className="font-semibold">

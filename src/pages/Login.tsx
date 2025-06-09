@@ -1,22 +1,24 @@
 // src/pages/Login.tsx
+
 import { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../config/firebaseConfig";
-import { useNavigate } from "react-router-dom";
-import bgCongreso from "../assets/img/bg-congreso.jpg";
-import logo from "../assets/img/logo.png";
+import { useNavigate, Link } from "react-router-dom"; // ✅ Importamos Link
+import bgCongreso from "../assets/img/bg-congreso.webp";
+import logo from "../assets/img/logo.webp";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [errorMsg, setErrorMsg] = useState("");
+  const [email, setEmail] = useState(""); // Estado del correo
+  const [password, setPassword] = useState(""); // Estado de la contraseña
+  const [errorMsg, setErrorMsg] = useState(""); // Mensaje de error si algo falla
   const navigate = useNavigate();
 
+  // Función para manejar el envío del formulario
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      navigate("/dashboard");
+      await signInWithEmailAndPassword(auth, email, password); // Autenticación con Firebase
+      navigate("/dashboard"); // Redirige si fue exitoso
     } catch (error) {
       setErrorMsg("Error al iniciar sesión. Revisa tus credenciales.");
       console.error("Error en login:", error);
@@ -25,40 +27,42 @@ export default function Login() {
 
   return (
     <div className="flex min-h-screen">
-      {/* Sección Izquierda: Imagen de fondo */}
+      {/* Sección izquierda con imagen de fondo */}
       <div
         className="hidden md:flex md:w-1/2 bg-cover bg-center"
         style={{
-          backgroundImage: `url(${bgCongreso})`, // Usar la imagen importada
+          backgroundImage: `url(${bgCongreso})`,
         }}
       >
-        <div className="w-full h-full flex items-center justify-center"
-           style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
+        <div
+          className="w-full h-full flex items-center justify-center"
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
         >
           <div className="text-white text-center p-8">
-            <h1 className="text-5xl  mb-6">
+            <h1 className="text-5xl mb-6">
               Sistema de Administración de Contactos - Empresas
             </h1>
-            <p className="text-lg">
-              Congreso de la República del Perú
-            </p>
+            <p className="text-lg">Congreso de la República del Perú</p>
           </div>
         </div>
       </div>
 
-      {/* Sección Derecha: Formulario */}
+      {/* Sección derecha con el formulario */}
       <div className="w-full md:w-1/2 flex items-center justify-center bg-gray-100">
         <div className="bg-white p-6 rounded shadow-md w-full max-w-sm m-4">
-          {/* (Opcional) Logo en la parte superior */}
+          {/* Logo superior */}
           <div className="flex items-center justify-center mb-6">
-            <img
-              src={logo} alt="Logo" className="h-30 w-auto"
-            />
+            <img src={logo} alt="Logo" className="h-30 w-auto" />
           </div>
 
-          <h2 className="text-2xl font-bold mb-4 text-center">Iniciar Sesión</h2>
-          {errorMsg && <p className="text-red-500 mb-2 text-center">{errorMsg}</p>}
+          <h2 className="text-2xl font-bold mb-4 text-center">
+            Iniciar Sesión
+          </h2>
+          {errorMsg && (
+            <p className="text-red-500 mb-2 text-center">{errorMsg}</p>
+          )}
 
+          {/* Formulario de inicio de sesión */}
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
               <label
@@ -73,7 +77,7 @@ export default function Login() {
                 placeholder="Ingrese su correo"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="border rounded w-full p-2 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                className="border rounded w-full p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
             </div>
@@ -104,15 +108,22 @@ export default function Login() {
             </button>
           </form>
 
-          {/* Enlaces de ayuda */}
+          {/* Enlaces debajo del formulario */}
           <div className="mt-4 text-center">
-            <a href="#" className="text-blue-600 hover:text-blue-800 transition">
+            <Link
+              to="/forgot-password"
+              className="text-blue-600 hover:text-blue-800 transition"
+            >
               ¿Olvidaste tu contraseña?
-            </a>
+            </Link>
             <br />
-            <a href="#" className="text-blue-600 hover:text-blue-800 transition">
+            {/* ✅ Enlace corregido con React Router */}
+            <Link
+              to="/register"
+              className="text-blue-600 hover:text-blue-800 transition"
+            >
               ¿No tienes cuenta? Regístrate
-            </a>
+            </Link>
           </div>
         </div>
       </div>

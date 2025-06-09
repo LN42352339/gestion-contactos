@@ -6,39 +6,36 @@ import {
   actualizarContacto,
   eliminarContacto,
 } from "../services/contactService";
-import ContactForm from "../components/ContactForm";
-import {
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Legend
-} from "recharts";
-
+import ExportModal from "../components/ExportModal.tsx";
+import ContactModalForm from "../components/ContactModalForm";
+import { agregarAHistorial } from "../services/historialService";
+import QuickActions from "../components/QuickActions.tsx";
+import { useNavigate } from "react-router-dom";
 import ContactTable from "../components/ContactTable";
 import { Contacto } from "../types";
-import Navbar from "../components/Navbar";
 import "../index.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as XLSX from "xlsx";
+import {
+  exportarContactosVCF,
+  exportarContactosCSV,
+  exportarContactosExcel,
+} from "../utils/exportUtils";
+import { validarContacto } from "../utils/formUtils";
+import { obtenerContactosPaginados } from "../utils/paginationUtils";
 
 export default function Dashboard() {
   const [cargando, setCargando] = useState(true);
   const [mostrarModalExportar, setMostrarModalExportar] = useState(false);
   const [contactos, setContactos] = useState<Contacto[]>([]);
-
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [paginaActual, setPaginaActual] = useState(1);
   const contactosPorPagina = 10;
+  const navigate = useNavigate();
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
   const [idEdicion, setIdEdicion] = useState<string | null>(null);
-  const [mostrarEstadisticas, setMostrarEstadisticas] = useState(false);
-
   const [contactosSeleccionados, setContactosSeleccionados] = useState<
     string[]
   >([]);
@@ -56,10 +53,6 @@ export default function Dashboard() {
   });
 
   const accesosRapidos = [
-    {
-      label: "Buscar Contacto",
-      img: "https://img.icons8.com/ios-filled/50/search-contacts.png",
-    },
     {
       label: "Agregar",
       img: "https://img.icons8.com/ios-filled/50/add-user-group-man-man.png",
@@ -91,20 +84,23 @@ export default function Dashboard() {
         input.click();
       },
     },
-
     {
       label: "Exportar",
       img: "https://img.icons8.com/ios-filled/50/vcf.png",
       onClick: () => setMostrarModalExportar(true),
     },
-
     {
       label: "Dashboard",
       img: "https://img.icons8.com/ios-filled/50/combo-chart.png",
-      onClick: () => setMostrarEstadisticas(true),
+      onClick: () => navigate("/estadisticas"),
     },
     {
-      label: "Cuenta",
+      label: "Historial de Contacto",
+      img: "https://img.icons8.com/ios-filled/50/search-contacts.png",
+      onClick: () => navigate("/historial"),
+    },
+    {
+      label: "Perfil",
       img: "https://img.icons8.com/ios-filled/50/user.png",
     },
   ];
@@ -175,99 +171,7 @@ export default function Dashboard() {
     reader.readAsBinaryString(archivo);
   };
 
-  const exportarContactosVCF = () => {
-    const seleccionados =
-      contactosSeleccionados.length > 0
-        ? contactos.filter((c) => contactosSeleccionados.includes(c.id || ""))
-        : contactos;
-
-    if (seleccionados.length === 0) {
-      toast.warn("No hay contactos seleccionados para exportar.");
-      return;
-    }
-
-    let contenidoVCF = "";
-    seleccionados.forEach((c) => {
-      contenidoVCF += `BEGIN:VCARD\nVERSION:3.0\n`;
-      contenidoVCF += `FN:${c.primerNombre} ${c.segundoNombre} ${c.primerApellido} ${c.segundoApellido}\n`;
-      contenidoVCF += `TEL;TYPE=CELL:${c.telefono}\n`;
-      if (c.email) contenidoVCF += `EMAIL:${c.email}\n`;
-      contenidoVCF += `END:VCARD\n`;
-    });
-
-    const blob = new Blob([contenidoVCF], { type: "text/vcard;charset=utf-8" });
-    const enlace = document.createElement("a");
-    const fecha = new Date().toISOString().slice(0, 10);
-    enlace.href = URL.createObjectURL(blob);
-    enlace.download = `contactos_seleccionados_${fecha}.vcf`;
-    enlace.click();
-    setMostrarModalExportar(false);
-  };
-
-  const exportarContactosCSV = () => {
-    const seleccionados =
-      contactosSeleccionados.length > 0
-        ? contactos.filter((c) => contactosSeleccionados.includes(c.id || ""))
-        : contactos;
-
-    if (seleccionados.length === 0) {
-      toast.warn("No hay contactos seleccionados para exportar.");
-      return;
-    }
-
-    const encabezados: (keyof Contacto)[] = [
-      "primerNombre",
-      "segundoNombre",
-      "primerApellido",
-      "segundoApellido",
-      "dni",
-      "telefono",
-      "email",
-      "cargo",
-      "area",
-      "supervisor",
-    ];
-
-    const csvContenido = [
-      encabezados.join(","), // encabezado CSV
-      ...seleccionados.map((contacto) =>
-        encabezados
-          .map((campo) => {
-            const valor = contacto[campo];
-            return `"${valor ? String(valor).replace(/"/g, '""') : ""}"`; // escapamos comillas y nulos
-          })
-          .join(",")
-      ),
-    ].join("\n");
-
-    const blob = new Blob([csvContenido], { type: "text/csv;charset=utf-8;" });
-    const enlace = document.createElement("a");
-    const fecha = new Date().toISOString().slice(0, 10);
-    enlace.href = URL.createObjectURL(blob);
-    enlace.download = `contactos_seleccionados_${fecha}.csv`;
-    enlace.click();
-    setMostrarModalExportar(false);
-  };
-
-  const exportarContactosExcel = () => {
-    const seleccionados =
-      contactosSeleccionados.length > 0
-        ? contactos.filter((c) => contactosSeleccionados.includes(c.id || ""))
-        : contactos;
-
-    if (seleccionados.length === 0) {
-      toast.warn("No hay contactos seleccionados para exportar.");
-      return;
-    }
-
-    const hoja = XLSX.utils.json_to_sheet(seleccionados);
-    const libro = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(libro, hoja, "Contactos");
-
-    const fecha = new Date().toISOString().slice(0, 10);
-    XLSX.writeFile(libro, `contactos_seleccionados_${fecha}.xlsx`);
-    setMostrarModalExportar(false);
-  };
+  //
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -299,13 +203,20 @@ export default function Dashboard() {
       toast.warn("No has seleccionado ningún contacto.");
       return;
     }
+
     const confirmar = window.confirm(
       "¿Deseas eliminar los contactos seleccionados?"
     );
     if (!confirmar) return;
+
+    const eliminados: Contacto[] = [];
+
     for (const id of contactosSeleccionados) {
+      const contacto = contactos.find((c) => c.id === id);
+      if (contacto) eliminados.push(contacto);
       await eliminarContacto(id);
     }
+
     setContactos(
       contactos.filter((c) => !contactosSeleccionados.includes(c.id!))
     );
@@ -313,45 +224,12 @@ export default function Dashboard() {
     toast.success("Contactos eliminados correctamente.");
   };
 
-  const contactosFiltrados = contactos.filter((contacto) => {
-    const searchTerm = searchQuery.toLowerCase();
-    return (
-      String(contacto.primerNombre || "")
-        .toLowerCase()
-        .includes(searchTerm) ||
-      String(contacto.segundoNombre || "")
-        .toLowerCase()
-        .includes(searchTerm) ||
-      String(contacto.primerApellido || "")
-        .toLowerCase()
-        .includes(searchTerm) ||
-      String(contacto.segundoApellido || "")
-        .toLowerCase()
-        .includes(searchTerm) ||
-      String(contacto.area || "")
-        .toLowerCase()
-        .includes(searchTerm) ||
-      String(contacto.telefono || "")
-        .toLowerCase()
-        .includes(searchTerm)
-    );
-  });
-
-  const totalPaginas = Math.ceil(
-    contactosFiltrados.length / contactosPorPagina
+  const { contactosPaginados, contactosFiltrados } = obtenerContactosPaginados(
+    contactos,
+    searchQuery,
+    paginaActual,
+    contactosPorPagina
   );
-  const indiceUltimo = paginaActual * contactosPorPagina;
-  const indicePrimero = indiceUltimo - contactosPorPagina;
-  const contactosPaginados = contactosFiltrados.slice(
-    indicePrimero,
-    indiceUltimo
-  );
-
-  const cambiarPagina = (pagina: number) => {
-    if (pagina >= 1 && pagina <= totalPaginas) {
-      setPaginaActual(pagina);
-    }
-  };
 
   const manejarEditar = (contacto: Contacto) => {
     setModoEdicion(true);
@@ -362,6 +240,10 @@ export default function Dashboard() {
 
   const manejarEliminar = async (id: string | undefined) => {
     if (!id) return;
+
+    const contacto = contactos.find((c) => c.id === id);
+    if (!contacto) return;
+
     const confirmar = window.confirm(
       "¿Estás seguro de que deseas eliminar este contacto?"
     );
@@ -369,53 +251,28 @@ export default function Dashboard() {
       toast.info("Eliminación cancelada.");
       return;
     }
-    await eliminarContacto(id);
-    setContactos(contactos.filter((c) => c.id !== id));
-    toast.info("Contacto eliminado correctamente.");
+
+    try {
+      await agregarAHistorial(contacto);
+      await eliminarContacto(id);
+
+      setContactos(contactos.filter((c) => c.id !== id));
+      toast.success("Contacto eliminado y guardado en el historial.");
+    } catch (error) {
+      console.error("Error al eliminar el contacto con historial:", error);
+      toast.error("Error al eliminar el contacto.");
+    }
   };
 
   const manejarSubmit = async () => {
-    const camposObligatorios = [
-      "primerNombre",
-      "primerApellido",
-      "segundoApellido",
-      "dni",
-      "telefono",
-      "area",
-    ];
-
-    for (const campo of camposObligatorios) {
-      if (!nuevoContacto[campo as keyof typeof nuevoContacto]?.trim()) {
-        toast.warn(`El campo "${campo}" es obligatorio.`);
-        return;
-      }
-    }
-
-    if (!/^[0-9]{8}$/.test(nuevoContacto.dni)) {
-      toast.error("El DNI debe tener exactamente 8 dígitos.");
-      return;
-    }
-
-    if (!/^[0-9]{9}$/.test(nuevoContacto.telefono)) {
-      toast.error("El teléfono debe tener exactamente 9 dígitos.");
-      return;
-    }
-
-    if (
-      nuevoContacto.email &&
-      !/^[\w.-]+@[\w.-]+\.\w{2,}$/.test(nuevoContacto.email)
-    ) {
-      toast.error("El correo electrónico no es válido.");
-      return;
-    }
-
-    const telefonoDuplicado = contactos.some(
-      (c) =>
-        c.telefono === nuevoContacto.telefono &&
-        (!modoEdicion || c.id !== idEdicion)
+    const error = validarContacto(
+      nuevoContacto,
+      contactos,
+      modoEdicion,
+      idEdicion
     );
-    if (telefonoDuplicado) {
-      toast.error("El número de teléfono ya está registrado.");
+    if (error) {
+      toast.error(error);
       return;
     }
 
@@ -440,6 +297,7 @@ export default function Dashboard() {
         setContactos([...contactos, { ...contactoMayusculas, id }]);
         toast.success("✅ Contacto agregado exitosamente.");
       }
+
       setMostrarFormulario(false);
       setModoEdicion(false);
       setIdEdicion(null);
@@ -453,7 +311,7 @@ export default function Dashboard() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
         <img
-          src="/src/assets/img/logod.png"
+          src="/src/assets/img/cargando.webp"
           alt="Logo"
           className="w-24 h-24 animate-pulse mb-4"
         />
@@ -464,185 +322,61 @@ export default function Dashboard() {
     );
   }
 
-  // Total de contactos
-  const cantidadContactos = contactos.length;
-
-  // Contar contactos por área
-  const contarContactosPorArea = () => {
-    const conteo: { area: string; cantidad: number }[] = [];
-    const agrupado: { [area: string]: number } = {};
-
-    contactos.forEach((contacto) => {
-      if (contacto.area) {
-        agrupado[contacto.area] = (agrupado[contacto.area] || 0) + 1;
-      }
-    });
-
-    for (const area in agrupado) {
-      conteo.push({ area, cantidad: agrupado[area] });
-    }
-
-    return conteo;
-  };
-
-  // Área con más contactos
-  const areaConMasContactos = contarContactosPorArea().reduce(
-    (prev, curr) => (curr.cantidad > prev.cantidad ? curr : prev),
-    { area: "Sin datos", cantidad: 0 }
-  ).area;
-
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900">
-      <Navbar />
       <main className="w-full p-6">
         <ToastContainer position="top-center" autoClose={3000} />
         <h2 className="text-3xl font-bold text-center text-slate-600 mb-6">
           Gestión de Contactos
         </h2>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 mb-8">
-          {accesosRapidos.map((item, i) => (
-            <div
-              key={i}
-              className="bg-white shadow rounded p-4 flex flex-col items-center hover:shadow-lg transition cursor-pointer"
-              onClick={item.onClick}
-            >
-              <img src={item.img} alt={item.label} className="mb-2 h-10 w-10" />
-              <span className="font-semibold text-center">{item.label}</span>
-            </div>
-          ))}
-        </div>
+        <QuickActions actions={accesosRapidos} />
 
         {mostrarFormulario && (
-          <div className="fixed inset-0 bg-white/40 bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
-            <div className="bg-white w-full max-w-2xl p-6 rounded-lg shadow-xl relative">
-              <button
-                className="absolute top-2 right-2 text-red-500 font-bold text-xl hover:text-red-700"
-                onClick={() => setMostrarFormulario(false)}
-              >
-                ✖
-              </button>
-              <ContactForm
-                contacto={nuevoContacto}
-                manejarCambio={(e) => {
-                  const { name, value } = e.target;
-                  const valor = name === "email" ? value : value.toUpperCase();
-                  setNuevoContacto((prev) => ({ ...prev, [name]: valor }));
-                }}
-                manejarSubmit={manejarSubmit}
-                modoEdicion={modoEdicion}
-              />
-            </div>
-          </div>
-        )}
-
-        {mostrarEstadisticas && (
-          <div className="bg-white p-6 mt-6 rounded shadow-md">
-            <h3 className="text-2xl font-semibold mb-4 text-center">
-              📊 Estadísticas de Contactos
-            </h3>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-              <div className="bg-white p-4 rounded shadow text-center">
-                <h3 className="text-lg font-bold text-gray-700">
-                  📋 Total Contactos
-                </h3>
-                <p className="text-3xl text-blue-600 font-semibold">
-                  {cantidadContactos}
-                </p>
-              </div>
-              <div className="bg-white p-4 rounded shadow text-center">
-                <h3 className="text-lg font-bold text-gray-700">
-                  🏢 Área con más contactos
-                </h3>
-                <p className="text-2xl text-green-600 font-semibold">
-                  {areaConMasContactos}
-                </p>
-              </div>
-            </div>
-
-            <button
-              className="mb-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-              onClick={() => setMostrarEstadisticas(false)}
-            >
-              Cerrar Dashboard
-            </button>
-
-            <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h4 className="text-lg font-semibold mb-2">
-                  Contactos por Área
-                </h4>
-                <BarChart
-                  width={500}
-                  height={300}
-                  data={contarContactosPorArea()}
-                >
-                  <XAxis dataKey="area" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="cantidad" fill="#8884d8" />
-                </BarChart>
-              </div>
-
-              <div>
-                <h4 className="text-lg font-semibold mb-2">
-                  Distribución General
-                </h4>
-                <PieChart width={400} height={300}>
-                  <Pie
-                    data={contarContactosPorArea()}
-                    dataKey="cantidad"
-                    nameKey="area"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={100}
-                    fill="#82ca9d"
-                    label
-                  />
-                  <Tooltip />
-                </PieChart>
-              </div>
-            </div>
-          </div>
+          <ContactModalForm
+            contacto={nuevoContacto}
+            modoEdicion={modoEdicion}
+            manejarCambio={(e) => {
+              const { name, value } = e.target;
+              const valor = name === "email" ? value : value.toUpperCase();
+              setNuevoContacto((prev) => ({ ...prev, [name]: valor }));
+            }}
+            manejarSubmit={manejarSubmit}
+            onClose={() => setMostrarFormulario(false)}
+          />
         )}
 
         {mostrarModalExportar && (
-          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded shadow-lg w-full max-w-md">
-              <h3 className="text-xl font-bold mb-4 text-center">
-                Exportar contactos seleccionados
-              </h3>
-              <div className="flex flex-col sm:flex-row justify-center items-center gap-3">
-                <button
-                  className="bg-green-600 text-white px-4 py-2 rounded w-full"
-                  onClick={exportarContactosVCF}
-                >
-                  Exportar a VCF
-                </button>
-                <button
-                  className="bg-blue-600 text-white px-4 py-2 rounded mr-2"
-                  onClick={exportarContactosCSV}
-                >
-                  Exportar a CSV
-                </button>
-
-                <button
-                  className="bg-purple-600 text-white px-4 py-2 rounded w-full"
-                  onClick={exportarContactosExcel}
-                >
-                  Exportar a Excel
-                </button>
-              </div>
-              <button
-                className="mt-4 bg-gray-300 text-gray-800 px-4 py-2 rounded w-full"
-                onClick={() => setMostrarModalExportar(false)}
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
+          <ExportModal
+            onClose={() => setMostrarModalExportar(false)}
+            onExportVCF={() =>
+              exportarContactosVCF(
+                contactosSeleccionados.length > 0
+                  ? contactos.filter((c) =>
+                      contactosSeleccionados.includes(c.id || "")
+                    )
+                  : contactos
+              )
+            }
+            onExportCSV={() =>
+              exportarContactosCSV(
+                contactosSeleccionados.length > 0
+                  ? contactos.filter((c) =>
+                      contactosSeleccionados.includes(c.id || "")
+                    )
+                  : contactos
+              )
+            }
+            onExportExcel={() =>
+              exportarContactosExcel(
+                contactosSeleccionados.length > 0
+                  ? contactos.filter((c) =>
+                      contactosSeleccionados.includes(c.id || "")
+                    )
+                  : contactos
+              )
+            }
+          />
         )}
 
         <div className="w-full mt-4">
@@ -676,37 +410,9 @@ export default function Dashboard() {
             toggleSeleccionTodos={toggleSeleccionTodos}
           />
         </div>
-
-        <div className="flex justify-center items-center mt-4 gap-2 flex-wrap">
-          <button
-            onClick={() => cambiarPagina(paginaActual - 1)}
-            disabled={paginaActual === 1}
-            className="px-3 py-1 border rounded disabled:opacity-50"
-          >
-            ← Anterior
-          </button>
-
-          {[...Array(totalPaginas)].map((_, i) => (
-            <button
-              key={i}
-              onClick={() => cambiarPagina(i + 1)}
-              className={`px-3 py-1 border rounded ${
-                paginaActual === i + 1 ? "bg-red-500 text-white" : ""
-              }`}
-            >
-              {i + 1}
-            </button>
-          ))}
-
-          <button
-            onClick={() => cambiarPagina(paginaActual + 1)}
-            disabled={paginaActual === totalPaginas}
-            className="px-3 py-1 border rounded disabled:opacity-50"
-          >
-            Siguiente →
-          </button>
-        </div>
       </main>
     </div>
   );
 }
+
+//ULTIMO

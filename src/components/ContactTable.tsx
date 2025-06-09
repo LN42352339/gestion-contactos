@@ -28,7 +28,7 @@ const ContactTable: React.FC<ContactTableProps> = ({
       {/* Contenedor con scroll horizontal para pantallas pequeñas */}
       <table className="min-w-[900px] w-full bg-white border border-gray-200 text-sm">
         {/* Cabecera con estilo más compacto */}
-        <thead className="bg-red-500 text-white text-xs">
+        <thead className="bg-red-500 text-white text-xs uppercase">
           <tr>
           <th className="px-1 py-1 border text-xs">
 
@@ -38,10 +38,10 @@ const ContactTable: React.FC<ContactTableProps> = ({
                 onChange={toggleSeleccionTodos}
               />
             </th>
-            <th className="px-0 py-2 border text-xs">Primer Nombre</th>
-            <th className="px-0 py-1 border text-xs">Segundo Nombre</th>
-            <th className="px-0 py-1 border text-xs">Apellido Paterno</th>
-            <th className="px-0 py-1 border text-xs">Apellido Materno</th>
+            <th className="px-0 py-2 border text-xs">Nombre</th>
+            <th className="px-0 py-1 border text-xs">S. Nombre</th>
+            <th className="px-0 py-1 border text-xs">Ap. Paterno</th>
+            <th className="px-0 py-1 border text-xs">Ap. Materno</th>
             <th className="px-0 py-1 border text-xs">DNI</th>
             <th className="px-0 py-1 border text-xs">Teléfono</th>
             <th className="px-0 py-1 border text-xs">Email</th>

@@ -68,17 +68,49 @@ const ContactForm: React.FC<ContactFormProps> = ({
           name="dni"
           placeholder="DNI *"
           value={contacto.dni}
-          onChange={manejarCambio}
+          onChange={(e) => {
+            const soloNumeros = e.target.value.replace(/\D/g, ""); // elimina todo lo que no sea número
+            const maxOcho = soloNumeros.slice(0, 8); // corta a 8 dígitos
+            manejarCambio({
+              ...e,
+              target: {
+                ...e.target,
+                value: maxOcho,
+                name: "dni",
+              },
+            });
+          }}
           className="border rounded-md p-2 w-full"
         />
+
         <input
           type="text"
           name="telefono"
           placeholder="Teléfono *"
           value={contacto.telefono}
-          onChange={manejarCambio}
+          onChange={(e) => {
+            let soloNumeros = e.target.value.replace(/\D/g, ""); // quita todo lo que no sea número
+
+            // Si empieza con 9, permitimos hasta 9 dígitos
+            if (soloNumeros.startsWith("9")) {
+              soloNumeros = soloNumeros.slice(0, 9);
+            } else {
+              // Si no empieza con 9, borramos todo (opcional: puedes poner un mensaje)
+              soloNumeros = "";
+            }
+
+            manejarCambio({
+              ...e,
+              target: {
+                ...e.target,
+                value: soloNumeros,
+                name: "telefono",
+              },
+            });
+          }}
           className="border rounded-md p-2 w-full"
         />
+
         <input
           type="email"
           name="email"
@@ -132,3 +164,5 @@ const ContactForm: React.FC<ContactFormProps> = ({
 };
 
 export default ContactForm;
+
+//ULTIMO CAMBIO
