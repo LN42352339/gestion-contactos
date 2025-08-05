@@ -1,4 +1,4 @@
-import { FaEdit, FaTrash } from "react-icons/fa"; // Importamos los íconos
+import { FaEdit, FaTrash } from "react-icons/fa";
 import { Contacto } from "../types";
 import React from "react";
 
@@ -26,18 +26,20 @@ const ContactRow: React.FC<ContactRowProps> = ({
           onChange={() => toggleSeleccion(contacto.id!)}
         />
       </td>
-      <td className="px-2 py-1 border text-xs">{contacto.primerNombre}</td>
-      <td className="px-2 py-1 border text-xs">{contacto.segundoNombre}</td>
-      <td className="px-2 py-1 border text-xs">{contacto.primerApellido}</td>
-      <td className="px-2 py-1 border text-xs">{contacto.segundoApellido}</td>
-      <td className="px-2 py-1 border text-xs">{contacto.dni}</td>
-      <td className="px-2 py-1 border text-xs">{contacto.telefono}</td>
-      <td className="px-2 py-1 border break-words max-w-[185px] text-xs">
-        {contacto.email}
+
+      {/* Columna de Nombre completo */}
+      <td className="px-2 py-1 border text-xs">
+        {`${contacto.primerNombre} ${contacto.segundoNombre ?? ""} ${contacto.primerApellido} ${contacto.segundoApellido ?? ""}`.trim()}
       </td>
-      <td className="px-2 py-1 border text-xs">{contacto.cargo}</td>
+
+      <td className="px-2 py-1 border text-xs">{contacto.telefono}</td>
       <td className="px-2 py-1 border text-xs">{contacto.area}</td>
-      <td className="px-2 py-1 border text-xs">{contacto.supervisor}</td>
+      <td className="px-2 py-1 border text-xs">{contacto.marca}</td>
+      <td className="px-2 py-1 border text-xs">{contacto.modelo}</td>
+      <td className="px-2 py-1 border text-xs">{contacto.serie}</td>
+      <td className="px-2 py-1 border text-xs">{contacto.operador}</td>
+      <td className="px-2 py-1 border text-xs">{contacto.fechaAtencion}</td>
+
       <td className="px-2 py-1 border text-center space-x-1">
         <div className="flex items-center justify-center space-x-2">
           <button

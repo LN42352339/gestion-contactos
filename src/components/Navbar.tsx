@@ -1,14 +1,36 @@
-// src/components/Navbar.tsx
-
+import { useEffect, useState } from "react";
 import { signOut } from "firebase/auth";
-import { auth } from "../config/firebaseConfig";
-import { useAuth } from "../contexts/AuthContext"; // Hook que retorna { user, loading }
+import { auth, db } from "../config/firebaseConfig";
+import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { doc, getDoc } from "firebase/firestore";
 import logo from "../assets/img/cargando.webp";
 
 export default function Navbar() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [nombreUsuario, setNombreUsuario] = useState("");
+
+  useEffect(() => {
+    const obtenerNombre = async () => {
+      if (user) {
+        try {
+          const docRef = doc(db, "usuarios", user.uid);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            setNombreUsuario(docSnap.data().nombre);
+          } else {
+            setNombreUsuario(user.email || "Usuario");
+          }
+        } catch (error) {
+          console.error("Error al obtener el nombre:", error);
+          setNombreUsuario(user.email || "Usuario");
+        }
+      }
+    };
+
+    obtenerNombre();
+  }, [user]);
 
   const handleLogout = async () => {
     try {
@@ -33,9 +55,7 @@ export default function Navbar() {
       {/* Usuario y botón de logout */}
       <div className="flex items-center space-x-4">
         {user && (
-          <span className="font-semibold">
-            Hola, {user.displayName || user.email}
-          </span>
+          <span className="font-semibold">Hola, {nombreUsuario}</span>
         )}
         <button
           onClick={handleLogout}

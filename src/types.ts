@@ -1,17 +1,21 @@
+// Interfaz principal del contacto
 export interface Contacto {
-  id?: string;
+  id?: string; // Se genera automáticamente por Firestore
   primerNombre: string;
-  segundoNombre: string;
+  segundoNombre?: string;
   primerApellido: string;
-  segundoApellido: string;
-  dni: string;
-  telefono: string;
-  email: string;
-  cargo: string;
+  segundoApellido?: string;
   area: string;
-  supervisor: string;
+  fechaAtencion: string; // formato string "YYYY-MM-DD" o "DD/MM/YYYY"
+  operador: string;
+  telefono: string;
+  marca: string;
+  modelo: string;
+  serie: string;
+  nombreCompleto?: string; // generado automáticamente si no se provee
 }
 
+// Interfaz extendida para contactos eliminados con historial
 export interface ContactoConHistorial extends Contacto {
-  eliminadoEn: string;
+  eliminadoEn: string; // fecha de eliminación
 }

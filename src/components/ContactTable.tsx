@@ -24,48 +24,45 @@ const ContactTable: React.FC<ContactTableProps> = ({
   );
 
   return (
-    <div className="overflow-x-auto mt-6 shadow-lg rounded-lg w-full">
-      {/* Contenedor con scroll horizontal para pantallas pequeñas */}
-      <table className="min-w-[900px] w-full bg-white border border-gray-200 text-sm">
-        {/* Cabecera con estilo más compacto */}
-        <thead className="bg-red-500 text-white text-xs uppercase">
-          <tr>
-          <th className="px-1 py-1 border text-xs">
+    <div className="w-full mt-6 shadow-lg rounded-lg">
+      {/* Contenedor con scroll vertical + horizontal */}
+      <div className="max-h-[500px] overflow-y-auto overflow-x-auto rounded-lg">
+        <table className="min-w-[1000px] w-full bg-white border border-gray-200 text-sm">
+          <thead className="bg-red-500 text-white text-xs uppercase sticky top-0 z-10 shadow-md">
+            <tr>
+              <th className="px-1 py-1 border text-xs">
+                <input
+                  type="checkbox"
+                  checked={todosSeleccionados}
+                  onChange={toggleSeleccionTodos}
+                />
+              </th>
+              <th className="px-1 py-1 border text-xs">Nombre completo</th>
+               <th className="px-1 py-1 border text-xs">Teléfono</th>
+              <th className="px-1 py-1 border text-xs">Área</th>
+              <th className="px-1 py-1 border text-xs">Marca</th>
+              <th className="px-1 py-1 border text-xs">Modelo</th>
+              <th className="px-1 py-1 border text-xs">Serie</th>
+              <th className="px-1 py-1 border text-xs">Operador</th>
+              <th className="px-1 py-1 border text-xs">Fecha Atención</th>
+              <th className="px-1 py-1 border text-xs">Acciones</th>
+            </tr>
+          </thead>
 
-              <input
-                type="checkbox"
-                checked={todosSeleccionados}
-                onChange={toggleSeleccionTodos}
+          <tbody>
+            {contactos.map((contacto) => (
+              <ContactRow
+                key={contacto.id}
+                contacto={contacto}
+                editarContacto={editarContacto}
+                eliminarContacto={eliminarContacto}
+                seleccionado={contactosSeleccionados.includes(contacto.id || "")}
+                toggleSeleccion={toggleSeleccion}
               />
-            </th>
-            <th className="px-0 py-2 border text-xs">Nombre</th>
-            <th className="px-0 py-1 border text-xs">S. Nombre</th>
-            <th className="px-0 py-1 border text-xs">Ap. Paterno</th>
-            <th className="px-0 py-1 border text-xs">Ap. Materno</th>
-            <th className="px-0 py-1 border text-xs">DNI</th>
-            <th className="px-0 py-1 border text-xs">Teléfono</th>
-            <th className="px-0 py-1 border text-xs">Email</th>
-            <th className="px-0 py-1 border text-xs">Cargo</th>
-            <th className="px-0 py-1 border text-xs">Área</th>
-            <th className="px-0 py-1 border text-xs">Supervisor</th>
-            <th className="px-0 py-1 border text-xs">Acciones</th>
-          </tr>
-        </thead>
-
-        {/* Cuerpo de la tabla */}
-        <tbody>
-          {contactos.map((contacto) => (
-            <ContactRow
-              key={contacto.id}
-              contacto={contacto}
-              editarContacto={editarContacto}
-              eliminarContacto={eliminarContacto}
-              seleccionado={contactosSeleccionados.includes(contacto.id || "")}
-              toggleSeleccion={toggleSeleccion}
-            />
-          ))}
-        </tbody>
-      </table>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };

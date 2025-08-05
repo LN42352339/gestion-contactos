@@ -2,6 +2,7 @@ import { Contacto } from "../types";
 import * as XLSX from "xlsx";
 import { toast } from "react-toastify";
 
+// Exportar a VCF
 export function exportarContactosVCF(contactos: Contacto[]) {
   if (contactos.length === 0) {
     toast.warn("No hay contactos para exportar.");
@@ -10,10 +11,11 @@ export function exportarContactosVCF(contactos: Contacto[]) {
 
   let contenidoVCF = "";
   contactos.forEach((c) => {
+    const nombreCompleto = c.nombreCompleto || `${c.primerNombre} ${c.segundoNombre ?? ""} ${c.primerApellido} ${c.segundoApellido ?? ""}`.trim();
+
     contenidoVCF += `BEGIN:VCARD\nVERSION:3.0\n`;
-    contenidoVCF += `FN:${c.primerNombre} ${c.segundoNombre} ${c.primerApellido} ${c.segundoApellido}\n`;
+    contenidoVCF += `FN:${nombreCompleto}\n`;
     contenidoVCF += `TEL;TYPE=CELL:${c.telefono}\n`;
-    if (c.email) contenidoVCF += `EMAIL:${c.email}\n`;
     contenidoVCF += `END:VCARD\n`;
   });
 
@@ -21,6 +23,7 @@ export function exportarContactosVCF(contactos: Contacto[]) {
   descargarArchivo(blob, "vcf");
 }
 
+// Exportar a CSV
 export function exportarContactosCSV(contactos: Contacto[]) {
   if (contactos.length === 0) {
     toast.warn("No hay contactos para exportar.");
@@ -32,20 +35,24 @@ export function exportarContactosCSV(contactos: Contacto[]) {
     "segundoNombre",
     "primerApellido",
     "segundoApellido",
-    "dni",
+    "nombreCompleto",
     "telefono",
-    "email",
-    "cargo",
     "area",
-    "supervisor",
+    "fechaAtencion",
+    "operador",
+    "marca",
+    "modelo",
+    "serie",
   ];
 
   const csvContenido = [
-    encabezados.join(","), // encabezado CSV
-    ...contactos.map((contacto) =>
+    encabezados.join(","),
+    ...contactos.map((c) =>
       encabezados
         .map((campo) => {
-          const valor = contacto[campo];
+          const valor = campo === "nombreCompleto"
+            ? c.nombreCompleto || `${c.primerNombre} ${c.segundoNombre ?? ""} ${c.primerApellido} ${c.segundoApellido ?? ""}`.trim()
+            : c[campo];
           return `"${valor ? String(valor).replace(/"/g, '""') : ""}"`;
         })
         .join(",")
@@ -56,13 +63,29 @@ export function exportarContactosCSV(contactos: Contacto[]) {
   descargarArchivo(blob, "csv");
 }
 
+// Exportar a Excel
 export function exportarContactosExcel(contactos: Contacto[]) {
   if (contactos.length === 0) {
     toast.warn("No hay contactos para exportar.");
     return;
   }
 
-  const hoja = XLSX.utils.json_to_sheet(contactos);
+  const contactosFiltrados = contactos.map((c) => ({
+    primerNombre: c.primerNombre,
+    segundoNombre: c.segundoNombre ?? "",
+    primerApellido: c.primerApellido,
+    segundoApellido: c.segundoApellido ?? "",
+    nombreCompleto: c.nombreCompleto || `${c.primerNombre} ${c.segundoNombre ?? ""} ${c.primerApellido} ${c.segundoApellido ?? ""}`.trim(),
+    telefono: c.telefono,
+    area: c.area,
+    fechaAtencion: c.fechaAtencion,
+    operador: c.operador,
+    marca: c.marca,
+    modelo: c.modelo,
+    serie: c.serie,
+  }));
+
+  const hoja = XLSX.utils.json_to_sheet(contactosFiltrados);
   const libro = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(libro, hoja, "Contactos");
 
@@ -70,7 +93,7 @@ export function exportarContactosExcel(contactos: Contacto[]) {
   XLSX.writeFile(libro, `contactos_seleccionados_${fecha}.xlsx`);
 }
 
-// Función compartida para descargar archivos
+// Función común para descargar archivos
 function descargarArchivo(blob: Blob, tipo: "vcf" | "csv") {
   const enlace = document.createElement("a");
   const fecha = new Date().toISOString().slice(0, 10);

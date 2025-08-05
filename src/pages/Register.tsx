@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../config/firebaseConfig"; // ajusta el path según tu estructura
+import { auth, db } from "../config/firebaseConfig"; // asegúrate de exportar db desde tu firebaseConfig
 import { useNavigate } from "react-router-dom";
+import { doc, setDoc } from "firebase/firestore";
 
 const Register = () => {
+  const [nombre, setNombre] = useState(""); // nuevo campo
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -12,7 +14,14 @@ const Register = () => {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      const credenciales = await createUserWithEmailAndPassword(auth, email, password);
+
+      // ✅ Guardar el nombre en Firestore usando el uid como ID del documento
+      await setDoc(doc(db, "usuarios", credenciales.user.uid), {
+        nombre,
+        email,
+      });
+
       navigate("/dashboard"); // redirige después del registro
     } catch (error: unknown) {
       if (error instanceof Error) {
@@ -32,6 +41,15 @@ const Register = () => {
         <h2 className="text-2xl font-bold mb-4 text-center">Crear Cuenta</h2>
 
         {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+
+        <input
+          type="text"
+          placeholder="Nombre completo"
+          className="w-full p-2 border border-gray-300 rounded mb-4"
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+          required
+        />
 
         <input
           type="email"
