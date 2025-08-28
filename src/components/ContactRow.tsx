@@ -29,7 +29,7 @@ const ContactRow: React.FC<ContactRowProps> = ({
 
       {/* Columna de Nombre completo */}
       <td className="px-2 py-1 border text-xs">
-        {`${contacto.primerNombre} ${contacto.segundoNombre ?? ""} ${contacto.primerApellido} ${contacto.segundoApellido ?? ""}`.trim()}
+        {`${contacto.primerApellido} ${contacto.segundoApellido ?? ""} ${contacto.primerNombre} ${contacto.segundoNombre ?? ""}`.trim()}
       </td>
 
       <td className="px-2 py-1 border text-xs">{contacto.telefono}</td>

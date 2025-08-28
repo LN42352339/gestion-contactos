@@ -9,104 +9,99 @@ import {
   Pie,
   Cell,
   ResponsiveContainer,
+  CartesianGrid,
 } from "recharts";
 
-export interface StatisticsDashboardProps {
-  datosGrafico: { area: string; cantidad: number }[];
-  colores: string[];
-  onCerrar: () => void;
+export type PuntoArea = { area: string; cantidad: number };
+
+const COLORS = [
+  "#2563eb","#16a34a","#dc2626","#f59e0b","#7c3aed","#0ea5e9",
+  "#ef4444","#22c55e","#a855f7","#eab308","#6366f1","#14b8a6",
+  "#f97316","#84cc16","#d946ef","#06b6d4",
+];
+
+type Props = {
+  datosGrafico: PuntoArea[];
   cantidadContactos: number;
   cantidadEliminados: number;
   areaConMasContactos: string;
-}
+};
 
-const StatisticsDashboard: React.FC<StatisticsDashboardProps> = ({
+export default function StatisticsDashboard({
   datosGrafico = [],
-  colores = [],
   cantidadContactos = 0,
   cantidadEliminados = 0,
   areaConMasContactos = "Sin datos",
-}) => {
+}: Props) {
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-      <div className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-6xl">
-        <h3 className="text-3xl font-bold mb-8 text-center text-slate-700">
-          📊 Estadísticas de Contactos
-        </h3>
+    <div className="min-h-[70vh] bg-white p-6 rounded-2xl shadow-2xl w-full">
+      <h3 className="text-3xl font-bold mb-8 text-center text-slate-700">
+        📊 Estadísticas de Contactos
+      </h3>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10 text-center">
-          <div className="bg-gray-50 p-4 rounded-lg shadow">
-            <h4 className="text-lg font-semibold text-gray-600">
-              Contactos Activos
-            </h4>
-            <p className="text-4xl font-bold text-blue-600">
-              {cantidadContactos}
-            </p>
-          </div>
-          <div className="bg-gray-50 p-4 rounded-lg shadow">
-            <h4 className="text-lg font-semibold text-gray-600">
-              Contactos Eliminados
-            </h4>
-            <p className="text-4xl font-bold text-red-500">
-              {cantidadEliminados}
-            </p>
-          </div>
-          <div className="bg-gray-50 p-4 rounded-lg shadow">
-            <h4 className="text-lg font-semibold text-gray-600">
-              Área con más contactos
-            </h4>
-            <p className="text-2xl font-bold text-green-600">
-              {areaConMasContactos}
-            </p>
-          </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10 text-center">
+        <Card title="Contactos Activos" value={cantidadContactos} valueClass="text-blue-600" />
+        <Card title="Contactos Eliminados" value={cantidadEliminados} valueClass="text-red-500" />
+        <Card title="Área con más contactos" value={areaConMasContactos} valueClass="text-green-600 text-2xl" />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Barras por área */}
+        <div className="h-[360px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={datosGrafico}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey="area"
+                tick={{ fontSize: 10 }}
+                interval={0}
+                angle={-35}
+                textAnchor="end"
+                height={70}
+              />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="cantidad">
+                {datosGrafico.map((_, i) => (
+                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={datosGrafico}>
-                <XAxis dataKey="area" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="cantidad">
-                  {datosGrafico.map((_, index) => (
-                    <Cell
-                      key={`bar-${index}`}
-                      fill={colores[index % colores.length]}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={datosGrafico}
-                  dataKey="cantidad"
-                  nameKey="area"
-                  outerRadius={100}
-                  fill="#8884d8"
-                  label
-                >
-                  {datosGrafico.map((_, index) => (
-                    <Cell
-                      key={`pie-${index}`}
-                      fill={colores[index % colores.length]}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+        {/* Torta por área */}
+        <div className="h-[360px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie data={datosGrafico} dataKey="cantidad" nameKey="area" outerRadius={110} label>
+                {datosGrafico.map((_, i) => (
+                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>
   );
-};
+}
 
-export default StatisticsDashboard;
+function Card({
+  title,
+  value,
+  valueClass = "",
+}: {
+  title: string;
+  value: React.ReactNode;
+  valueClass?: string;
+}) {
+  return (
+    <div className="bg-gray-50 p-4 rounded-lg shadow">
+      <h4 className="text-lg font-semibold text-gray-600">{title}</h4>
+      <p className={`text-4xl font-bold ${valueClass}`}>{value}</p>
+    </div>
+  );
+}

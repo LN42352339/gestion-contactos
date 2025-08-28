@@ -1,5 +1,5 @@
 // src/pages/Dashboard.tsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   obtenerContactos,
   agregarContacto,
@@ -15,6 +15,7 @@ import ContactTable from "../components/ContactTable";
 import { Contacto } from "../types";
 import "../index.css";
 import { ToastContainer, toast } from "react-toastify";
+import DeletingOverlay from "../components/DeletingOverlay";
 import "react-toastify/dist/ReactToastify.css";
 import * as XLSX from "xlsx";
 import {
@@ -24,6 +25,8 @@ import {
 } from "../utils/exportUtils";
 import { validarContacto } from "../utils/formUtils";
 import { FaTrash } from "react-icons/fa";
+import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
+import { eliminarContactosBatchConProgreso } from "../services/contactService";
 
 function convertirFechaExcel(fechaSerial: number): string {
   const fecha = new Date(Math.round((fechaSerial - 25569) * 86400 * 1000));
@@ -40,6 +43,16 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const navigate = useNavigate();
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
+
+  // NUEVO: estado para modal de confirmación reutilizable
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmTitle, setConfirmTitle] = useState<string>("¿Eliminar?");
+  const [confirmMessage, setConfirmMessage] = useState<string>("");
+  const confirmActionRef = useRef<() => void | Promise<void>>(() => {});
+
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteProgress, setDeleteProgress] = useState(0);
+
   const [modoEdicion, setModoEdicion] = useState(false);
   const [idEdicion, setIdEdicion] = useState<string | null>(null);
   const [contactosSeleccionados, setContactosSeleccionados] = useState<
@@ -234,19 +247,6 @@ export default function Dashboard() {
     );
   };
 
-  const eliminarSeleccionados = async () => {
-    if (contactosSeleccionados.length === 0)
-      return toast.warn("No has seleccionado ningún contacto.");
-    if (!window.confirm("¿Deseas eliminar los contactos seleccionados?"))
-      return;
-    for (const id of contactosSeleccionados) await eliminarContacto(id);
-    setContactos(
-      contactos.filter((c) => !contactosSeleccionados.includes(c.id!))
-    );
-    setContactosSeleccionados([]);
-    toast.success("Contactos eliminados correctamente.");
-  };
-
   const contactosFiltrados = contactos.filter((c) =>
     `${c.primerNombre} ${c.segundoNombre} ${c.primerApellido} ${c.segundoApellido}`
       .toLowerCase()
@@ -260,21 +260,92 @@ export default function Dashboard() {
     setMostrarFormulario(true);
   };
 
+  // ABRE el modal para confirmar eliminación múltiple
+  const solicitarEliminarSeleccionados = () => {
+    if (contactosSeleccionados.length === 0) {
+      toast.warn("No has seleccionado ningún contacto.");
+      return;
+    }
+    setConfirmTitle("¿Eliminar contactos seleccionados?");
+    setConfirmMessage(
+      `Se eliminarán ${contactosSeleccionados.length} contacto(s). Esta acción no se puede deshacer.`
+    );
+    confirmActionRef.current = eliminarSeleccionadosConfirmado;
+    setConfirmOpen(true);
+  };
+
+  // EJECUTA la eliminación múltiple (se llama al confirmar en el modal)
+
+  const eliminarSeleccionadosConfirmado = async () => {
+    const ids = [...contactosSeleccionados];
+    if (!ids.length) return;
+
+    // cerrar modal al instante
+    setConfirmOpen(false);
+    setIsDeleting(true);
+    setDeleteProgress(0);
+
+    const toastId = toast.loading("Eliminando contactos... 0%");
+    try {
+      await eliminarContactosBatchConProgreso(ids, (done, total) => {
+        const pct = Math.round((done / total) * 100);
+        setDeleteProgress(pct);
+        toast.update(toastId, {
+          render: `Eliminando contactos... ${pct}%`,
+          isLoading: true,
+        });
+      });
+
+      setContactos((prev) => prev.filter((c) => !ids.includes(c.id!)));
+      setContactosSeleccionados([]);
+
+      toast.update(toastId, {
+        render: "Contactos eliminados",
+        type: "success",
+        isLoading: false,
+        autoClose: 2000,
+      });
+    } catch (e) {
+      console.error(e);
+      toast.update(toastId, {
+        render: "Error al eliminar",
+        type: "error",
+        isLoading: false,
+        autoClose: 4000,
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Reemplazo de manejarEliminar (individual) usando modal
   const manejarEliminar = async (id: string | undefined) => {
     if (!id) return;
     const contacto = contactos.find((c) => c.id === id);
     if (!contacto) return;
-    if (!window.confirm("¿Estás seguro de que deseas eliminar este contacto?"))
-      return toast.info("Eliminación cancelada.");
-    try {
-      await agregarAHistorial(contacto);
-      await eliminarContacto(id);
-      setContactos(contactos.filter((c) => c.id !== id));
-      toast.success("Contacto eliminado y guardado en el historial.");
-    } catch (error) {
-      console.error("Error al eliminar:", error);
-      toast.error("Error al eliminar el contacto.");
-    }
+
+    setConfirmTitle("¿Eliminar este contacto?");
+    setConfirmMessage(
+      `Se eliminará a ${
+        contacto.nombreCompleto || "este contacto"
+      }. También se guardará en el historial.`
+    );
+
+    confirmActionRef.current = async () => {
+      try {
+        await agregarAHistorial(contacto);
+        await eliminarContacto(id);
+        setContactos(contactos.filter((c) => c.id !== id));
+        toast.success("Contacto eliminado y guardado en el historial.");
+      } catch (error) {
+        console.error("Error al eliminar:", error);
+        toast.error("Error al eliminar el contacto.");
+      } finally {
+        setConfirmOpen(false);
+      }
+    };
+
+    setConfirmOpen(true);
   };
 
   const manejarSubmit = async () => {
@@ -415,17 +486,28 @@ export default function Dashboard() {
         <div className="w-full mt-4 flex justify-between items-center">
           {contactosSeleccionados.length > 0 && (
             <button
-              onClick={eliminarSeleccionados}
+              onClick={solicitarEliminarSeleccionados} // <- antes: eliminarSeleccionados
               className="p-3 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-transform transform hover:scale-110"
               title="Eliminar seleccionados"
             >
               <FaTrash size={20} />
             </button>
           )}
+
           <div className="text-sm text-gray-600">
             Total de contactos: {contactosFiltrados.length}
           </div>
         </div>
+
+        <ConfirmDeleteModal
+          open={confirmOpen}
+          title={confirmTitle}
+          message={confirmMessage}
+          confirmText="Sí, eliminar"
+          cancelText="Cancelar"
+          onConfirm={() => confirmActionRef.current()}
+          onClose={() => setConfirmOpen(false)}
+        />
 
         <div className="w-full mt-1 max-h-[600px] overflow-y-auto">
           <ContactTable
@@ -437,6 +519,8 @@ export default function Dashboard() {
             toggleSeleccionTodos={toggleSeleccionTodos}
           />
         </div>
+
+        <DeletingOverlay open={isDeleting} progress={deleteProgress} />
       </main>
     </div>
   );
