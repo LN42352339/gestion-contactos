@@ -5,8 +5,11 @@ import {
   agregarContacto,
   actualizarContacto,
   eliminarContacto,
+  eliminarContactosBatchConProgreso,
 } from "../services/contactService";
 import ExportModal from "../components/ExportModal.tsx";
+import { FaRegEdit, FaPrint } from "react-icons/fa";
+
 import ContactModalForm from "../components/ContactModalForm";
 import { agregarAHistorial } from "../services/historialService";
 import QuickActions from "../components/QuickActions.tsx";
@@ -26,7 +29,6 @@ import {
 import { validarContacto } from "../utils/formUtils";
 import { FaTrash } from "react-icons/fa";
 import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
-import { eliminarContactosBatchConProgreso } from "../services/contactService";
 
 function convertirFechaExcel(fechaSerial: number): string {
   const fecha = new Date(Math.round((fechaSerial - 25569) * 86400 * 1000));
@@ -44,14 +46,16 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
 
-  // NUEVO: estado para modal de confirmación reutilizable
+  // Modal de confirmación reutilizable
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTitle, setConfirmTitle] = useState<string>("¿Eliminar?");
   const [confirmMessage, setConfirmMessage] = useState<string>("");
   const confirmActionRef = useRef<() => void | Promise<void>>(() => {});
-
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteProgress, setDeleteProgress] = useState(0);
+
+  // ✅ Solo queda el modal para Agregar
+  const [mostrarModalAgregar, setMostrarModalAgregar] = useState(false);
 
   const [modoEdicion, setModoEdicion] = useState(false);
   const [idEdicion, setIdEdicion] = useState<string | null>(null);
@@ -73,28 +77,12 @@ export default function Dashboard() {
     nombreCompleto: "",
   });
 
+  // ⬇️ Acciones rápidas (Perfil vuelve a ser pasivo, sin onClick)
   const accesosRapidos = [
     {
       label: "Agregar",
       img: "https://img.icons8.com/ios-filled/50/add-user-group-man-man.png",
-      onClick: () => {
-        setMostrarFormulario(true);
-        setModoEdicion(false);
-        setNuevoContacto({
-          primerNombre: "",
-          segundoNombre: "",
-          primerApellido: "",
-          segundoApellido: "",
-          area: "",
-          fechaAtencion: "",
-          operador: "",
-          telefono: "",
-          marca: "",
-          modelo: "",
-          serie: "",
-          nombreCompleto: "",
-        });
-      },
+      onClick: () => setMostrarModalAgregar(true),
     },
     {
       label: "Importar",
@@ -150,8 +138,6 @@ export default function Dashboard() {
       const data = evt.target?.result;
       const workbook = XLSX.read(data, { type: "binary" });
       const hoja = workbook.Sheets[workbook.SheetNames[0]];
-
-      // Ya no necesitas mapear manualmente, los nombres están bien
       const datos: Contacto[] = XLSX.utils.sheet_to_json(hoja);
 
       const nuevos: Contacto[] = [];
@@ -197,9 +183,8 @@ export default function Dashboard() {
                   const anio = fecha.getFullYear();
                   return `${dia}/${mes}/${anio}`;
                 }
-                return "01/01/1900"; // Fecha por defecto si no se puede procesar
+                return "01/01/1900";
               })(),
-
               operador: String(contacto.operador).toUpperCase(),
               telefono: String(contacto.telefono),
               marca: String(contacto.marca).toUpperCase(),
@@ -260,7 +245,7 @@ export default function Dashboard() {
     setMostrarFormulario(true);
   };
 
-  // ABRE el modal para confirmar eliminación múltiple
+  // Confirmación de eliminación múltiple
   const solicitarEliminarSeleccionados = () => {
     if (contactosSeleccionados.length === 0) {
       toast.warn("No has seleccionado ningún contacto.");
@@ -274,13 +259,10 @@ export default function Dashboard() {
     setConfirmOpen(true);
   };
 
-  // EJECUTA la eliminación múltiple (se llama al confirmar en el modal)
-
   const eliminarSeleccionadosConfirmado = async () => {
     const ids = [...contactosSeleccionados];
     if (!ids.length) return;
 
-    // cerrar modal al instante
     setConfirmOpen(false);
     setIsDeleting(true);
     setDeleteProgress(0);
@@ -318,7 +300,7 @@ export default function Dashboard() {
     }
   };
 
-  // Reemplazo de manejarEliminar (individual) usando modal
+  // Eliminar individual con historial
   const manejarEliminar = async (id: string | undefined) => {
     if (!id) return;
     const contacto = contactos.find((c) => c.id === id);
@@ -348,6 +330,7 @@ export default function Dashboard() {
     setConfirmOpen(true);
   };
 
+  // Guardar (crear/editar)
   const manejarSubmit = async () => {
     const error = validarContacto(
       nuevoContacto,
@@ -356,6 +339,7 @@ export default function Dashboard() {
       idEdicion
     );
     if (error) return toast.error(error);
+
     const contactoMayusculas: Contacto = {
       primerNombre: nuevoContacto.primerNombre?.toUpperCase() || "",
       segundoNombre: nuevoContacto.segundoNombre?.toUpperCase() || "",
@@ -397,6 +381,47 @@ export default function Dashboard() {
     } catch (error) {
       console.error("Error al guardar:", error);
       toast.error("Ocurrió un error al guardar el contacto.");
+    }
+  };
+
+  // ➕ Flujo Manual (igual que antes)
+  const abrirFormularioManual = () => {
+    setMostrarFormulario(true);
+    setModoEdicion(false);
+    setNuevoContacto({
+      primerNombre: "",
+      segundoNombre: "",
+      primerApellido: "",
+      segundoApellido: "",
+      area: "",
+      fechaAtencion: "",
+      operador: "",
+      telefono: "",
+      marca: "",
+      modelo: "",
+      serie: "",
+      nombreCompleto: "",
+    });
+  };
+
+  // 🤖 Flujo Automático (protocolo VIISAN)
+  const SCANNER_URI = "viisan://scan";
+  const abrirScannerViisan = () => {
+    toast.info("🔄 Intentando abrir VIISAN OfficeCam...", { autoClose: 3000 });
+    try {
+      const iframe = document.createElement("iframe");
+      iframe.style.display = "none";
+      iframe.src = SCANNER_URI;
+      document.body.appendChild(iframe);
+      setTimeout(() => document.body.removeChild(iframe), 2000);
+      setTimeout(() => {
+        window.location.href = SCANNER_URI;
+      }, 100);
+    } catch (err) {
+      console.error("Error al abrir VIISAN:", err);
+      toast.error("⚠️ No se pudo lanzar VIISAN (revisa instalación)", {
+        autoClose: 5000,
+      });
     }
   };
 
@@ -473,6 +498,55 @@ export default function Dashboard() {
           />
         )}
 
+        {/* Modal: Agregar contacto */}
+        {mostrarModalAgregar && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            {/* Fondo oscuro */}
+            <div
+              className="absolute inset-0 bg-black/40"
+              onClick={() => setMostrarModalAgregar(false)}
+            />
+            {/* Caja */}
+            <div className="relative z-10 w-[92%] max-w-md rounded-2xl bg-white shadow-xl p-6">
+              <h2 className="text-xl font-semibold text-gray-800 text-center">
+                Agregar contacto
+              </h2>
+              <p className="mt-2 text-sm text-gray-600 text-center">
+                Selecciona cómo deseas agregar un nuevo contacto:
+              </p>
+
+              <div className="mt-6 grid grid-cols-1 gap-3">
+                <button
+                  onClick={() => {
+                    setMostrarModalAgregar(false);
+                    abrirFormularioManual();
+                  }}
+                  className="flex items-center justify-center gap-2 w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-800 hover:bg-gray-50 active:scale-[0.99] transition"
+                >
+                  <FaRegEdit /> Manual
+                </button>
+
+                <button
+                  onClick={() => {
+                    setMostrarModalAgregar(false);
+                    abrirScannerViisan();
+                  }}
+                  className="flex items-center justify-center gap-2 w-full rounded-xl bg-red-600 text-white px-4 py-3 hover:bg-red-700 active:scale-[0.99] transition"
+                >
+                  <FaPrint /> Automático (VIISAN)
+                </button>
+              </div>
+
+              <button
+                onClick={() => setMostrarModalAgregar(false)}
+                className="mt-4 w-full text-sm text-gray-500 hover:text-gray-700"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="w-full mt-4">
           <input
             type="text"
@@ -486,7 +560,7 @@ export default function Dashboard() {
         <div className="w-full mt-4 flex justify-between items-center">
           {contactosSeleccionados.length > 0 && (
             <button
-              onClick={solicitarEliminarSeleccionados} // <- antes: eliminarSeleccionados
+              onClick={solicitarEliminarSeleccionados}
               className="p-3 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-transform transform hover:scale-110"
               title="Eliminar seleccionados"
             >

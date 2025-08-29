@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import StatisticsDashboard, { PuntoArea } from "../components/StatisticsDashboard";
+import StatisticsDashboard, {
+  PuntoArea,
+} from "../components/StatisticsDashboard";
 import { obtenerContactos } from "../services/contactService";
 import { Contacto } from "../types";
 import { collection, getDocs } from "firebase/firestore";
@@ -18,7 +20,9 @@ export default function EstadisticasPage() {
         const lista = await obtenerContactos();
         setContactos(lista);
 
-        const historialSnap = await getDocs(collection(db, "historialContactos"));
+        const historialSnap = await getDocs(
+          collection(db, "historialContactos")
+        );
         setEliminados(historialSnap.size);
       } catch (error) {
         console.error("Error al obtener estadísticas:", error);
@@ -29,6 +33,14 @@ export default function EstadisticasPage() {
     cargarDatos();
   }, []);
 
+  // 🔢 Conteo de "DISPONIBLE" (cambia c.area por el campo correcto si es otro)
+  const disponibles = useMemo(() => {
+    return contactos.filter((c) =>
+      (c.area || "").toUpperCase().includes("DISPONIBLE")
+    ).length;
+  }, [contactos]);
+
+  // 📊 Agrupar por área
   const datosArea: PuntoArea[] = useMemo(() => {
     const agrupado: Record<string, number> = {};
     for (const c of contactos) {
@@ -41,14 +53,16 @@ export default function EstadisticasPage() {
   }, [contactos]);
 
   const areaConMasContactos = useMemo(
-    () => (datosArea[0]?.area ?? "Sin datos"),
+    () => datosArea[0]?.area ?? "Sin datos",
     [datosArea]
   );
 
   if (cargando) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <p className="text-lg text-gray-600 animate-pulse">Cargando estadísticas...</p>
+        <p className="text-lg text-gray-600 animate-pulse">
+          Cargando estadísticas...
+        </p>
       </div>
     );
   }
@@ -56,7 +70,9 @@ export default function EstadisticasPage() {
   return (
     <div className="min-h-screen bg-gray-100 p-6 flex flex-col">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-3xl font-bold text-slate-700">Estadísticas de Contactos</h2>
+        <h2 className="text-3xl font-bold text-slate-700">
+          Estadísticas de Contactos
+        </h2>
         <button
           onClick={() => navigate("/dashboard")}
           className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
@@ -71,6 +87,7 @@ export default function EstadisticasPage() {
           cantidadContactos={contactos.length}
           cantidadEliminados={eliminados}
           areaConMasContactos={areaConMasContactos}
+          cantidadDisponibles={disponibles} // 👈 NUEVO
         />
       </div>
     </div>
