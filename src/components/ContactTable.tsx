@@ -1,4 +1,5 @@
-import React from "react";
+// src/components/ContactTable.tsx
+import React, { useEffect, useRef } from "react";
 import ContactRow from "./ContactRow";
 import { Contacto } from "../types";
 
@@ -19,9 +20,21 @@ const ContactTable: React.FC<ContactTableProps> = ({
   toggleSeleccion,
   toggleSeleccionTodos,
 }) => {
-  const todosSeleccionados = contactos.every((c) =>
-    contactosSeleccionados.includes(c.id || "")
-  );
+  // ✅ (2) ids visibles robustos y cálculo de "todos seleccionados"
+  const idsVisibles = contactos.map((c) => c.id).filter(Boolean) as string[];
+  const todosSeleccionados =
+    idsVisibles.length > 0 &&
+    idsVisibles.every((id) => contactosSeleccionados.includes(id));
+
+  // ✅ (2 - opcional UX) estado "indeterminate" cuando hay algunos, no todos
+  const headerRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!headerRef.current) return;
+    const alguno = idsVisibles.some((id) =>
+      contactosSeleccionados.includes(id)
+    );
+    headerRef.current.indeterminate = alguno && !todosSeleccionados;
+  }, [idsVisibles, contactosSeleccionados, todosSeleccionados]);
 
   return (
     <div className="w-full mt-6 shadow-lg rounded-lg">
@@ -32,13 +45,15 @@ const ContactTable: React.FC<ContactTableProps> = ({
             <tr>
               <th className="px-1 py-1 border text-xs">
                 <input
+                  ref={headerRef}
                   type="checkbox"
                   checked={todosSeleccionados}
-                  onChange={toggleSeleccionTodos}
+                  // ✅ (1) handler explícito; evita warnings de tipo
+                  onChange={() => toggleSeleccionTodos()}
                 />
               </th>
               <th className="px-1 py-1 border text-xs">Nombre completo</th>
-               <th className="px-1 py-1 border text-xs">Teléfono</th>
+              <th className="px-1 py-1 border text-xs">Teléfono</th>
               <th className="px-1 py-1 border text-xs">Área</th>
               <th className="px-1 py-1 border text-xs">Marca</th>
               <th className="px-1 py-1 border text-xs">Modelo</th>
@@ -50,9 +65,10 @@ const ContactTable: React.FC<ContactTableProps> = ({
           </thead>
 
           <tbody>
-            {contactos.map((contacto) => (
+            {contactos.map((contacto, idx) => (
               <ContactRow
-                key={contacto.id}
+                // ✅ (3) key estable con fallback si faltara id
+                key={contacto.id ?? `${contacto.telefono}-${idx}`}
                 contacto={contacto}
                 editarContacto={editarContacto}
                 eliminarContacto={eliminarContacto}

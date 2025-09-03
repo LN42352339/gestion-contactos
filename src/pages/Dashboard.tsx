@@ -116,7 +116,12 @@ export default function Dashboard() {
   useEffect(() => {
     const cargarContactos = async () => {
       try {
-        const contactosLista = await obtenerContactos();
+        const crudos = await obtenerContactos();
+        const contactosLista = crudos.map((c) => ({
+          ...c,
+          telefono: String(c.telefono ?? ""), // fuerza string
+          serie: String(c.serie ?? ""), // fuerza string
+        }));
         setContactos(contactosLista);
       } catch (error) {
         console.error("Error al cargar contactos:", error);
@@ -232,11 +237,37 @@ export default function Dashboard() {
     );
   };
 
-  const contactosFiltrados = contactos.filter((c) =>
-    `${c.primerNombre} ${c.segundoNombre} ${c.primerApellido} ${c.segundoApellido}`
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase())
-  );
+  const contactosFiltrados = contactos.filter((c) => {
+    const q = String(searchQuery ?? "")
+      .trim()
+      .toLowerCase();
+    if (!q) return true;
+
+    const qDigits = q.replace(/\D+/g, "");
+
+    const nombre = [
+      c.primerNombre,
+      c.segundoNombre,
+      c.primerApellido,
+      c.segundoApellido,
+    ]
+      .map((v) => String(v ?? ""))
+      .join(" ")
+      .trim()
+      .toLowerCase();
+
+    const telDigits = String(c.telefono ?? "").replace(/\D+/g, "");
+    const serieStr = String(c.serie ?? "");
+    const serieLower = serieStr.toLowerCase();
+    const serieDigits = serieStr.replace(/\D+/g, "");
+
+    return (
+      nombre.includes(q) ||
+      (qDigits !== "" && telDigits.includes(qDigits)) ||
+      serieLower.includes(q) ||
+      (qDigits !== "" && serieDigits.includes(qDigits))
+    );
+  });
 
   const manejarEditar = (contacto: Contacto) => {
     setModoEdicion(true);
@@ -348,10 +379,10 @@ export default function Dashboard() {
       area: nuevoContacto.area?.toUpperCase() || "",
       fechaAtencion: nuevoContacto.fechaAtencion || "",
       operador: nuevoContacto.operador?.toUpperCase() || "",
-      telefono: nuevoContacto.telefono || "",
+      telefono: String(nuevoContacto.telefono || "").replace(/\D+/g, ""), // solo dígitos
+      serie: String(nuevoContacto.serie || "").toUpperCase(), // serie/IMEI normalizado
       marca: nuevoContacto.marca?.toUpperCase() || "",
       modelo: nuevoContacto.modelo?.toUpperCase() || "",
-      serie: nuevoContacto.serie?.toUpperCase() || "",
       nombreCompleto: `${nuevoContacto.primerNombre || ""} ${
         nuevoContacto.segundoNombre || ""
       } ${nuevoContacto.primerApellido || ""} ${
