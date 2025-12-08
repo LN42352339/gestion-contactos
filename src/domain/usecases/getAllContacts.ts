@@ -1,8 +1,13 @@
-// src/domain/usecases/getAllContacts.ts
 import { ContactRepository } from "../repositories/contactRepository";
 import { Contacto } from "../entities/contact";
 
-// 🔹 Caso de uso para obtener todos los contactos
+/**
+ * Caso de uso para obtener contactos.
+ * 🔥 Ahora permite filtros opcionales por categoría:
+ *    - execute() → trae todos
+ *    - execute("parlamento") → solo parlamentarios
+ *    - execute("congresal") → solo congresales
+ */
 export class GetAllContactsUseCase {
   private readonly repository: ContactRepository;
 
@@ -10,8 +15,7 @@ export class GetAllContactsUseCase {
     this.repository = repository;
   }
 
-  async execute(): Promise<Contacto[]> {
-    // Simplemente delega al repositorio
-    return this.repository.getAll();
+  async execute(categoria?: string): Promise<Contacto[]> {
+    return this.repository.getAll(categoria);
   }
 }
