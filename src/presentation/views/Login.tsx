@@ -41,7 +41,7 @@ export default function Login() {
         >
           <div className="text-white text-center p-8">
             <h1 className="text-5xl mb-6">
-              Sistema de Administración de Contactos - Empresas
+              Sistema de Gestion del Directorio Institucional
             </h1>
             <p className="text-lg">Congreso de la República del Perú</p>
           </div>
@@ -120,7 +120,7 @@ export default function Login() {
               ¿Olvidaste tu contraseña?
             </Link>
             <br />
-            {/* ✅ Enlace corregido con React Router */}
+            {/*  Enlace corregido con React Router */}
             <Link
               to="/register"
               className="text-blue-600 hover:text-blue-800 transition"

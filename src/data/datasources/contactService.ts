@@ -34,9 +34,10 @@ import {
 // 🔹 Funciones que usa tu Dashboard / History / Statistics
 // ---------------------------------------------------------
 
-export async function obtenerContactos(): Promise<Contacto[]> {
-  return getAllContactsUseCase.execute();
+export async function obtenerContactos(categoria?: string): Promise<Contacto[]> {
+  return getAllContactsUseCase.execute(categoria);
 }
+
 
 export async function agregarContacto(contacto: Contacto): Promise<string> {
   return createContactUseCase.execute(contacto);

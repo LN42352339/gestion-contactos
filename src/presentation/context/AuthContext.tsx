@@ -14,8 +14,7 @@ interface AuthContextProps {
   loading: boolean;
 }
 
-// Creamos el contexto
-const AuthContext = createContext<AuthContextProps>({
+export const AuthContext = createContext<AuthContextProps>({
   user: null,
   loading: true,
 });

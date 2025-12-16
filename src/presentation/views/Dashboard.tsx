@@ -4,16 +4,13 @@ import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import * as XLSX from "xlsx";
 import { FaRegEdit, FaPrint, FaTrash } from "react-icons/fa";
-
 import ContactTable from "../components/ContactTable";
 import ExportModal from "../components/ExportModal";
 import ContactModalForm from "../components/ContactModalForm";
 import QuickActions from "../components/QuickActions";
 import DeletingOverlay from "../components/DeletingOverlay";
 import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
-
 import { Contacto } from "../../domain/entities/contact";
-
 import {
   obtenerContactos,
   agregarContacto,
@@ -21,20 +18,16 @@ import {
   eliminarContacto,
   eliminarContactosBatchConProgreso,
 } from "../../data/datasources/contactService";
-
 import { agregarAHistorial } from "../../data/datasources/historialService";
-
 import {
   exportarContactosVCF,
   exportarContactosCSV,
   exportarContactosExcel,
 } from "../../utils/exportUtils";
 import { validarContacto } from "../../utils/formUtils";
-
 import cargandoLogo from "../../assets/img/cargando.webp";
 import "../../index.css";
 import "react-toastify/dist/ReactToastify.css";
-
 
 function convertirFechaExcel(fechaSerial: number): string {
   const fecha = new Date(Math.round((fechaSerial - 25569) * 86400 * 1000));
@@ -62,12 +55,12 @@ export default function Dashboard() {
 
   // ✅ Solo queda el modal para Agregar
   const [mostrarModalAgregar, setMostrarModalAgregar] = useState(false);
-
   const [modoEdicion, setModoEdicion] = useState(false);
   const [idEdicion, setIdEdicion] = useState<string | null>(null);
-  const [contactosSeleccionados, setContactosSeleccionados] = useState<
-    string[]
-  >([]);
+  const [contactosSeleccionados, setContactosSeleccionados] = useState<string[]>(
+    []
+  );
+
   const [nuevoContacto, setNuevoContacto] = useState<Contacto>({
     primerNombre: "",
     segundoNombre: "",
@@ -116,18 +109,29 @@ export default function Dashboard() {
       img: "https://img.icons8.com/ios-filled/50/search-contacts.png",
       onClick: () => navigate("/historial"),
     },
-    { label: "Perfil", img: "https://img.icons8.com/ios-filled/50/user.png" },
+    {
+      label: "Perfil",
+      img: "https://img.icons8.com/ios-filled/50/user.png",
+      onClick: () => navigate("/perfil"),
+    },
+
   ];
+
+  const [categoriaFiltro, setCategoriaFiltro] = useState<string | null>(null);
 
   useEffect(() => {
     const cargarContactos = async () => {
       try {
-        const crudos = await obtenerContactos();
+        const crudos = categoriaFiltro
+          ? await obtenerContactos(categoriaFiltro)
+          : await obtenerContactos();
+
         const contactosLista = crudos.map((c) => ({
           ...c,
-          telefono: String(c.telefono ?? ""), // fuerza string
-          serie: String(c.serie ?? ""), // fuerza string
+          telefono: String(c.telefono ?? ""),
+          serie: String(c.serie ?? ""),
         }));
+
         setContactos(contactosLista);
       } catch (error) {
         console.error("Error al cargar contactos:", error);
@@ -136,22 +140,27 @@ export default function Dashboard() {
         setTimeout(() => setCargando(false), 500);
       }
     };
-    cargarContactos();
-  }, []);
 
+    cargarContactos();
+  }, [categoriaFiltro]);
+
+  // ✅ Importar (sin warning deprecated): usamos readAsArrayBuffer + XLSX.read({type:"array"})
   const manejarArchivo = async (e: Event) => {
     const input = e.target as HTMLInputElement;
     const archivo = input.files?.[0];
     if (!archivo) return;
 
     const reader = new FileReader();
-    reader.onload = async (evt) => {
+    reader.onload = async (evt: ProgressEvent<FileReader>) => {
       const data = evt.target?.result;
-      const workbook = XLSX.read(data, { type: "binary" });
+      if (!data) return;
+
+      const workbook = XLSX.read(data, { type: "array" });
       const hoja = workbook.Sheets[workbook.SheetNames[0]];
       const datos: Contacto[] = XLSX.utils.sheet_to_json(hoja);
 
       const nuevos: Contacto[] = [];
+      let rechazados = 0;
 
       for (const contacto of datos) {
         if (
@@ -165,58 +174,77 @@ export default function Dashboard() {
           contacto.modelo &&
           contacto.serie
         ) {
-          const telExiste = contactos.some(
-            (c) => c.telefono === String(contacto.telefono)
-          );
-          if (!telExiste) {
-            const contactoSanitizado: Contacto = {
-              primerNombre: String(contacto.primerNombre).toUpperCase(),
-              segundoNombre: String(contacto.segundoNombre || "").toUpperCase(),
-              primerApellido: String(contacto.primerApellido).toUpperCase(),
-              segundoApellido: String(
-                contacto.segundoApellido || ""
-              ).toUpperCase(),
-              area: String(contacto.area).toUpperCase(),
-              fechaAtencion: (() => {
-                if (typeof contacto.fechaAtencion === "number") {
-                  return convertirFechaExcel(contacto.fechaAtencion);
-                }
-                if (
-                  typeof contacto.fechaAtencion === "string" &&
-                  /^\d{2}\/\d{2}\/\d{4}$/.test(contacto.fechaAtencion)
-                ) {
-                  return contacto.fechaAtencion;
-                }
-                if (!isNaN(Date.parse(contacto.fechaAtencion))) {
-                  const fecha = new Date(contacto.fechaAtencion);
-                  const dia = String(fecha.getDate()).padStart(2, "0");
-                  const mes = String(fecha.getMonth() + 1).padStart(2, "0");
-                  const anio = fecha.getFullYear();
-                  return `${dia}/${mes}/${anio}`;
-                }
-                return "01/01/1900";
-              })(),
-              operador: String(contacto.operador).toUpperCase(),
-              telefono: String(contacto.telefono),
-              marca: String(contacto.marca).toUpperCase(),
-              modelo: String(contacto.modelo).toUpperCase(),
-              serie: String(contacto.serie).toUpperCase(),
-              nombreCompleto: `${contacto.primerNombre} ${contacto.segundoNombre || ""
-                } ${contacto.primerApellido} ${contacto.segundoApellido || ""}`
-                .trim()
-                .toUpperCase(),
-            };
-            const id = await agregarContacto(contactoSanitizado);
-            nuevos.push({ ...contactoSanitizado, id });
+          const telDigits = String(contacto.telefono ?? "").replace(/\D+/g, "");
+          const serieDigits = String(contacto.serie ?? "").replace(/\D+/g, "");
+
+          // ✅ teléfono 9 dígitos y serie/IMEI 15 dígitos EXACTOS
+          if (!/^\d{9}$/.test(telDigits) || !/^\d{15}$/.test(serieDigits)) {
+            rechazados++;
+            continue;
           }
+
+          const telExiste = contactos.some((c) => c.telefono === telDigits);
+          if (telExiste) {
+            rechazados++;
+            continue;
+          }
+
+          const contactoSanitizado: Contacto = {
+            primerNombre: String(contacto.primerNombre).toUpperCase(),
+            segundoNombre: String(contacto.segundoNombre || "").toUpperCase(),
+            primerApellido: String(contacto.primerApellido).toUpperCase(),
+            segundoApellido: String(contacto.segundoApellido || "").toUpperCase(),
+            area: String(contacto.area).toUpperCase(),
+            fechaAtencion: (() => {
+              if (typeof contacto.fechaAtencion === "number") {
+                return convertirFechaExcel(contacto.fechaAtencion);
+              }
+              if (
+                typeof contacto.fechaAtencion === "string" &&
+                /^\d{2}\/\d{2}\/\d{4}$/.test(contacto.fechaAtencion)
+              ) {
+                return contacto.fechaAtencion;
+              }
+              if (!isNaN(Date.parse(contacto.fechaAtencion))) {
+                const fecha = new Date(contacto.fechaAtencion);
+                const dia = String(fecha.getDate()).padStart(2, "0");
+                const mes = String(fecha.getMonth() + 1).padStart(2, "0");
+                const anio = fecha.getFullYear();
+                return `${dia}/${mes}/${anio}`;
+              }
+              return "01/01/1900";
+            })(),
+            operador: String(contacto.operador).toUpperCase(),
+            telefono: telDigits,
+            marca: String(contacto.marca).toUpperCase(),
+            modelo: String(contacto.modelo).toUpperCase(),
+            serie: serieDigits, // ✅ 15 dígitos exactos
+            nombreCompleto: `${contacto.primerNombre} ${contacto.segundoNombre || ""} ${contacto.primerApellido} ${contacto.segundoApellido || ""}`
+              .trim()
+              .toUpperCase(),
+          };
+
+          const id = await agregarContacto(contactoSanitizado);
+          nuevos.push({ ...contactoSanitizado, id });
+        } else {
+          rechazados++;
         }
       }
 
-      setContactos([...contactos, ...nuevos]);
-      toast.success("✅ Contactos importados correctamente");
+      setContactos((prev) => [...prev, ...nuevos]);
+
+      if (nuevos.length > 0) {
+        toast.success(`✅ Contactos importados correctamente: ${nuevos.length}`);
+      } else {
+        toast.warn("No se importó ningún contacto válido.");
+      }
+
+      if (rechazados > 0) {
+        toast.info(`⚠️ Registros rechazados: ${rechazados} (por duplicado o IMEI/Teléfono inválido)`);
+      }
     };
 
-    reader.readAsBinaryString(archivo);
+    reader.readAsArrayBuffer(archivo);
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -232,9 +260,11 @@ export default function Dashboard() {
     const idsTodos = contactosFiltrados
       .map((c) => c.id)
       .filter(Boolean) as string[];
+
     const todosSeleccionados = idsTodos.every((id) =>
       contactosSeleccionados.includes(id)
     );
+
     setContactosSeleccionados(
       todosSeleccionados
         ? contactosSeleccionados.filter((id) => !idsTodos.includes(id))
@@ -243,19 +273,12 @@ export default function Dashboard() {
   };
 
   const contactosFiltrados = contactos.filter((c) => {
-    const q = String(searchQuery ?? "")
-      .trim()
-      .toLowerCase();
+    const q = String(searchQuery ?? "").trim().toLowerCase();
     if (!q) return true;
 
     const qDigits = q.replace(/\D+/g, "");
 
-    const nombre = [
-      c.primerNombre,
-      c.segundoNombre,
-      c.primerApellido,
-      c.segundoApellido,
-    ]
+    const nombre = [c.primerNombre, c.segundoNombre, c.primerApellido, c.segundoApellido]
       .map((v) => String(v ?? ""))
       .join(" ")
       .trim()
@@ -344,15 +367,14 @@ export default function Dashboard() {
 
     setConfirmTitle("¿Eliminar este contacto?");
     setConfirmMessage(
-      `Se eliminará a ${contacto.nombreCompleto || "este contacto"
-      }. También se guardará en el historial.`
+      `Se eliminará a ${contacto.nombreCompleto || "este contacto"}. También se guardará en el historial.`
     );
 
     confirmActionRef.current = async () => {
       try {
         await agregarAHistorial(contacto);
         await eliminarContacto(id);
-        setContactos(contactos.filter((c) => c.id !== id));
+        setContactos((prev) => prev.filter((c) => c.id !== id));
         toast.success("Contacto eliminado y guardado en el historial.");
       } catch (error) {
         console.error("Error al eliminar:", error);
@@ -367,13 +389,20 @@ export default function Dashboard() {
 
   // Guardar (crear/editar)
   const manejarSubmit = async () => {
-    const error = validarContacto(
-      nuevoContacto,
-      contactos,
-      modoEdicion,
-      idEdicion
-    );
+    const error = validarContacto(nuevoContacto, contactos, modoEdicion, idEdicion);
     if (error) return toast.error(error);
+
+    // ✅ TELÉFONO solo dígitos y 9 exactos
+    const telefonoDigits = String(nuevoContacto.telefono ?? "").replace(/\D+/g, "");
+    if (!/^\d{9}$/.test(telefonoDigits)) {
+      return toast.error("El teléfono debe contener exactamente 9 dígitos numéricos.");
+    }
+
+    // ✅ SERIE/IMEI solo dígitos y 15 exactos
+    const serieDigits = String(nuevoContacto.serie ?? "").replace(/\D+/g, "");
+    if (!/^\d{15}$/.test(serieDigits)) {
+      return toast.error("El IMEI / Serie debe contener exactamente 15 dígitos numéricos.");
+    }
 
     const contactoMayusculas: Contacto = {
       primerNombre: nuevoContacto.primerNombre?.toUpperCase() || "",
@@ -383,13 +412,11 @@ export default function Dashboard() {
       area: nuevoContacto.area?.toUpperCase() || "",
       fechaAtencion: nuevoContacto.fechaAtencion || "",
       operador: nuevoContacto.operador?.toUpperCase() || "",
-      telefono: String(nuevoContacto.telefono || "").replace(/\D+/g, ""), // solo dígitos
-      serie: String(nuevoContacto.serie || "").toUpperCase(), // serie/IMEI normalizado
+      telefono: telefonoDigits,
+      serie: serieDigits, // ✅ 15 dígitos exactos
       marca: nuevoContacto.marca?.toUpperCase() || "",
       modelo: nuevoContacto.modelo?.toUpperCase() || "",
-      nombreCompleto: `${nuevoContacto.primerNombre || ""} ${nuevoContacto.segundoNombre || ""
-        } ${nuevoContacto.primerApellido || ""} ${nuevoContacto.segundoApellido || ""
-        }`
+      nombreCompleto: `${nuevoContacto.primerNombre || ""} ${nuevoContacto.segundoNombre || ""} ${nuevoContacto.primerApellido || ""} ${nuevoContacto.segundoApellido || ""}`
         .toUpperCase()
         .trim(),
     };
@@ -397,15 +424,13 @@ export default function Dashboard() {
     try {
       if (modoEdicion && idEdicion) {
         await actualizarContacto(idEdicion, contactoMayusculas);
-        setContactos(
-          contactos.map((c) =>
-            c.id === idEdicion ? { ...contactoMayusculas, id: idEdicion } : c
-          )
+        setContactos((prev) =>
+          prev.map((c) => (c.id === idEdicion ? { ...contactoMayusculas, id: idEdicion } : c))
         );
         toast.success("✅ Contacto actualizado exitosamente.");
       } else {
         const id = await agregarContacto(contactoMayusculas);
-        setContactos([...contactos, { ...contactoMayusculas, id }]);
+        setContactos((prev) => [...prev, { ...contactoMayusculas, id }]);
         toast.success("✅ Contacto agregado exitosamente.");
       }
       setMostrarFormulario(false);
@@ -461,12 +486,7 @@ export default function Dashboard() {
   if (cargando)
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
-        <img
-          src={cargandoLogo}
-          alt="Logo"
-          className="w-24 h-24 animate-pulse mb-4"
-        />
-
+        <img src={cargandoLogo} alt="Logo" className="w-24 h-24 animate-pulse mb-4" />
         <span className="text-gray-600 text-lg animate-pulse font-semibold">
           Cargando contactos...
         </span>
@@ -489,15 +509,28 @@ export default function Dashboard() {
             modoEdicion={modoEdicion}
             manejarCambio={(e) => {
               const { name, value } = e.target;
-              setNuevoContacto((prev) => ({
-                ...prev,
-                [name]: value.toUpperCase(),
-              }));
+
+              setNuevoContacto((prev) => {
+                // ✅ SERIE/IMEI: solo números y máximo 15
+                if (name === "serie") {
+                  const digits = value.replace(/\D+/g, "").slice(0, 15);
+                  return { ...prev, serie: digits };
+                }
+
+                // ✅ TELÉFONO: solo números y máximo 9
+                if (name === "telefono") {
+                  const digits = value.replace(/\D+/g, "").slice(0, 9);
+                  return { ...prev, telefono: digits };
+                }
+
+                return { ...prev, [name]: value.toUpperCase() };
+              });
             }}
             manejarSubmit={manejarSubmit}
             onClose={() => setMostrarFormulario(false)}
           />
         )}
+
 
         {mostrarModalExportar && (
           <ExportModal
@@ -505,27 +538,21 @@ export default function Dashboard() {
             onExportVCF={() =>
               exportarContactosVCF(
                 contactosSeleccionados.length > 0
-                  ? contactos.filter((c) =>
-                    contactosSeleccionados.includes(c.id || "")
-                  )
+                  ? contactos.filter((c) => contactosSeleccionados.includes(c.id || ""))
                   : contactos
               )
             }
             onExportCSV={() =>
               exportarContactosCSV(
                 contactosSeleccionados.length > 0
-                  ? contactos.filter((c) =>
-                    contactosSeleccionados.includes(c.id || "")
-                  )
+                  ? contactos.filter((c) => contactosSeleccionados.includes(c.id || ""))
                   : contactos
               )
             }
             onExportExcel={() =>
               exportarContactosExcel(
                 contactosSeleccionados.length > 0
-                  ? contactos.filter((c) =>
-                    contactosSeleccionados.includes(c.id || "")
-                  )
+                  ? contactos.filter((c) => contactosSeleccionados.includes(c.id || ""))
                   : contactos
               )
             }
@@ -581,15 +608,82 @@ export default function Dashboard() {
           </div>
         )}
 
-        <div className="w-full mt-4">
-          <input
-            type="text"
-            placeholder="Buscar por nombres o apellidos..."
-            value={searchQuery}
-            onChange={handleSearchChange}
-            className="border border-slate-700 p-2 w-full rounded-md"
-          />
+
+
+        {/* ✅ FILTROS EN FORMATO TABS / SEGMENTED CONTROL */}
+        {/* 🔎 BUSCAR + FILTRAR + TOTAL (estilo limpio) */}
+        <div className="mt-4 bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            {/* Buscador */}
+            <div className="relative w-full md:flex-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                🔍
+              </span>
+              <input
+                type="text"
+                placeholder="Buscar por nombres, apellidos, teléfono o serie..."
+                value={searchQuery}
+                onChange={handleSearchChange}
+                className="w-full rounded-xl border border-gray-300 bg-white pl-10 pr-3 py-2 text-sm
+                   focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-400"
+              />
+            </div>
+
+            {/* Total */}
+            <div className="flex items-center justify-between md:justify-end gap-3">
+              <span className="text-sm text-gray-600">Total</span>
+              <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-800">
+                {contactosFiltrados.length}
+              </span>
+            </div>
+          </div>
+
+          {/* Chips de filtro */}
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+
+
+            <button
+              type="button"
+              onClick={() => setCategoriaFiltro(null)}
+              className={`px-2 py-0.5 text-xs rounded-md border transition
+
+        ${categoriaFiltro === null
+                  ? "bg-red-600 text-white border-red-600 shadow-sm"
+                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                }`}
+            >
+              Todos
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setCategoriaFiltro("parlamento")}
+              className={`px-2 py-0.5 text-xs rounded-md border transition
+        ${categoriaFiltro === "parlamento"
+                  ? "bg-red-600 text-white border-red-600 shadow-sm"
+                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                }`}
+            >
+              Parlamento
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setCategoriaFiltro("congresal")}
+              className={`px-2 py-0.5 text-xs rounded-mdborder transition
+        ${categoriaFiltro === "congresal"
+                  ? "bg-red-600 text-white border-red-600 shadow-sm"
+                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                }`}
+            >
+              Congresales
+            </button>
+          </div>
         </div>
+
+
+
+
 
         <div className="w-full mt-4 flex justify-between items-center">
           {contactosSeleccionados.length > 0 && (
@@ -602,9 +696,6 @@ export default function Dashboard() {
             </button>
           )}
 
-          <div className="text-sm text-gray-600">
-            Total de contactos: {contactosFiltrados.length}
-          </div>
         </div>
 
         <ConfirmDeleteModal

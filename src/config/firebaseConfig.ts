@@ -1,4 +1,4 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
@@ -11,9 +11,12 @@ const firebaseConfig = {
   appId: "1:526517937231:web:2d45f0f12754d0d8e8b63a",
 };
 
-// Inicializar Firebase
-const app = initializeApp(firebaseConfig);
+// ✅ App principal (web admin)
+const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 
-// Exportar Firestore y Auth
+// ✅ App secundaria SOLO para crear usuarios sin tumbar la sesión del admin
+const secondaryApp = initializeApp(firebaseConfig, "secondary");
+
 export const db = getFirestore(app);
 export const auth = getAuth(app);
+export const secondaryAuth = getAuth(secondaryApp);

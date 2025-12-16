@@ -14,8 +14,8 @@ const getAllHistorialUseCase = new GetAllHistorialUseCase(historialRepository);
 const createHistorialUseCase = new CreateHistorialUseCase(historialRepository);
 
 /**
- * 🔹 Se usa en Dashboard al eliminar un contacto
- *    Recibe un Contacto normal, le agrega eliminadoEn y lo guarda en historial.
+ *  Se usa en Dashboard al eliminar un contacto
+ *  Recibe un Contacto normal, le agrega eliminadoEn y lo guarda en historial.
  */
 export async function agregarAHistorial(
   contacto: Contacto

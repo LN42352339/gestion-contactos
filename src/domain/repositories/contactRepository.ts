@@ -12,3 +12,5 @@ export interface ContactRepository {
   // Opcional, porque no todos los repositorios necesitan implementarlo
   deleteBatch?(ids: string[]): Promise<void>;
 }
+
+

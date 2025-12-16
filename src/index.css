@@ -71,3 +71,24 @@ button:focus-visible {
     background-color: #F54C4C;
   }
 }
+
+/* --- Fix global para checkbox visibles en Safari y Chrome --- */
+input[type="checkbox"] {
+  -webkit-appearance: none; /* Safari */
+  appearance: none;         /* General */
+  width: 18px;
+  height: 18px;
+  border: 2px solid #555;
+  border-radius: 4px;
+  background-color: white;
+  cursor: pointer;
+}
+
+input[type="checkbox"]:checked {
+  background-color: #F54C4C; /* tu color institucional */
+  border-color: #F54C4C;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6 10.8L3.2 8l-1.4 1.4L6 13.6l8-8-1.4-1.4z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+}
+

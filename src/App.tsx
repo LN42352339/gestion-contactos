@@ -6,7 +6,7 @@ import ForgotPassword from "./presentation/views/ForgotPassword";
 import Register from "./presentation/views/Register";
 import History from "./presentation/views/History";
 import Statistics from "./presentation/views/Statistics";
-
+import Perfil from "./presentation/views/Perfil";
 import ProtectedRoute from "./presentation/components/ProtectedRoute";
 import Layout from "./presentation/components/Layout"; // 👈 Importa Layout
 
@@ -30,6 +30,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/historial" element={<History />} />
           <Route path="/estadisticas" element={<Statistics />} />
+          <Route path="/perfil" element={<Perfil />} />
         </Route>
 
         {/* Ruta por defecto */}
